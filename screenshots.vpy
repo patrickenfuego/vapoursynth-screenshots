@@ -7,7 +7,6 @@ from typing import Union
 from termcolor import colored
 import re
 import math
-import argparse
 import subprocess
 import sys
 
@@ -63,6 +62,7 @@ def validate_input():
                 assert path_exists(value), "Source file path does not exist"
             except AssertionError as msg:
                 print(msg)
+                sys.exit(1)
             args["source"] = Path(value)
 
         elif key == "encode":
@@ -70,6 +70,7 @@ def validate_input():
                 assert path_exists(value), "Encode file path does not exist"
             except AssertionError as msg:
                 print(msg)
+                sys.exit(1)
             args["encode"] = Path(value)
 
         elif key == "screenshots":
@@ -97,10 +98,13 @@ def validate_input():
             args["title"] = value
 
         elif key == "tonemap_type":
-            print(f"Tonemap baby. Value: {value}")
-            if value == "hable" or value == "reinhard" or value == "mobius":
+            value.lower()
+            if value in ("hable", "reinhard", "mobius"):
                 args["tonemap"] = value.lower()
                 print(f"Tonemap value: {value}")
+            else:
+                print(f"Unknown tonemapping algorithm: {value}. Mobius will be used")
+                args["tonemap"] = "mobius"
 
         elif key == "exposure":
             try:
@@ -137,6 +141,8 @@ def replace_extension(files: list) -> tuple:
 """
     Determines the dimensions and returns them
     using ffprobe
+    
+    TODO: Verify ffprobe is available via PATH
 """
 
 
@@ -174,19 +180,24 @@ def get_resolution(path: PathLike, type: str) -> tuple:
 """
 
 
-def crop_src(res_info: tuple, clip: vs.VideoNode) -> vs.VideoNode:
+def crop_src(src: tuple, enc: tuple, clip: vs.VideoNode) -> vs.VideoNode:
     # set reference dimensions
-    if res_info[0] > 3000:
+    if enc[0] > 3000:
         full_width, full_height = 3840, 2160
-    elif res_info[0] <= 1920 and res_info["width"] > 1280:
+    elif enc[0] <= 1920 and enc[0] > 1280:
         full_width, full_height = 1920, 1080
-    elif res_info[0] <= 1280:
+    elif enc[0] <= 1280:
         full_width, full_height = 1280, 720
     else:
         raise InvalidArgumentException("Unsupported resolution")
+    
+    #resize if downscale
+    if src[0] > full_width:
+        clip = clip.resize.Spline36(width=full_width, height=full_height)
+        
     # Calculate top, bottom, left, right crop values
-    top = bottom = math.ceil((full_height - res_info[1]) / 2)
-    left = right = math.ceil((full_width - res_info[0]) / 2)
+    top = bottom = math.ceil((full_height - enc[1]) / 2)
+    left = right = math.ceil((full_width - enc[0]) / 2)
 
     return core.std.Crop(clip, left, right, top, bottom)
 
@@ -317,18 +328,13 @@ print(f"Pixel format: {format}")
 
 # Load clip files
 src, enc = load_VS_files(lwi_paths, [args["source"], args["encode"]], format)
-# Crop source
-src = crop_src(enc_res, src)
+# Crop source & resize if downscale
+src = crop_src(src_res, enc_res, src)
 # tonemap if UHD
 if format == "YUV420P10":
-    tonemap_algo = args["tonemap"] if "tonemap" in args else "mobius".lower()
-    print(f"Tonemap algorithm: {tonemap_algo}")
+    tonemap_algo = args["tonemap"].lower() if "tonemap" in args else "mobius"
     exposure = args["exposure"] if "exposure" in args else 4.5
     src, enc = tonemap(clips=(src, enc), res=enc_res, tonemap=tonemap_algo, exposure=exposure)
-
-# If 4K, tonemap
-# if format == "YUV420P10":
-#     src, enc = tonemap(clips=(src, enc))
 
 # Generate frame info
 title = "Encode" if "title" not in args else args["title"]
