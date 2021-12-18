@@ -10,7 +10,7 @@ I'm lazy, and hate changing variables for each batch of screenshots I create. Th
 
 Included is a PowerShell wrapper script (all platforms) to make entering CLI arguments easier. Vapoursynth parses arguments from the global dictionary (so no `argparse`), which is pretty tedious to type. The PowerShell script gives you tab complete functionality and more input validation. It's optional - `screenshots.vpy` works just fine on it's own.
 
-By default, screenshots are generated with character "tags", or letters that distinguish them and make them easy to sort. The script will check for existing tags and increment the characters so the other screenshots are not overwritten.
+By default, screenshots are generated with character "tags", or letters that distinguish them and make them easy to sort. The script will check for existing tags and increment the characters so other screenshots in the same directory are not overwritten.
 
 ---
 
@@ -19,6 +19,7 @@ By default, screenshots are generated with character "tags", or letters that dis
 - [Vapoursynth](https://www.vapoursynth.com/)
 - [tonemap plugin](https://github.com/ifb/vapoursynth-tonemap)
 - [awsmfunc](https://git.concertos.live/AHD/awsmfunc)
+- [ffprobe](https://ffmpeg.org/ffprobe.html)
 
 ---
 
@@ -55,18 +56,20 @@ The default value is Mobius, but you can specify which one you want using the `t
 
 ### PowerShell
 
-> All PowerShell parameters can be used positionally. See `Get-Help .\Wrapper.ps1` or read the comments to see them all.
+> All PowerShell parameters can be used positionally. See `Get-Help .\wrapper.ps1` or read the comments to see them all.
 
 ```PowerShell
 #Named parameters
-PS > .\Wrapper.ps1 -Encode "C:\Path\file.mkv" -Encode "C:\Path\file2.mkv" -Frames 100,200,300 -Title "My Encode" -TonemapType hable
+PS > .\Wrapper.ps1 -Encode "C:\Path\file.mkv" -Encode "C:\Path\file2.mkv" `
+                   -Frames 100,200,300 -Title "My Encode" -TonemapType hable
 #Positional parameters
-PS > .\Wrapper.ps1 "C:\Path\file.mkv" "C:\Path\file2.mkv" 100,200,300 "C:\Path\Screenshots" hable "My Encode"
+PS > .\Wrapper.ps1 "~/videos/source.mkv" "~/videos/encode.mkv" 100,200,300 "~/videos/screens" hable "My Encode"
 ```
 
 ### VSPipe
 
 ```shell
 #Pass parameters using --arg
-vspipe --arg "source=C:\Path\file1.mkv" --arg "encode=C:\Path\file2.mkv" --arg "frames=[100,200,300]" --arg "tonemap_type=hable" .\screenshots.vpy -
+~$ vspipe --arg "source=~/videos/source.mkv" --arg "encode=~/videos/encode.mkv" \
+              --arg "frames=[100,200,300]" --arg "tonemap_type=hable" screenshots.vpy -
 ```
