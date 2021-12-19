@@ -24,7 +24,7 @@
 
 [CmdletBinding()]
 param (
-    [Parameter(Mandatory = $true, Position = 0)]
+    [Parameter(Mandatory = $false, Position = 0)]
     [ValidateScript(
         {
             if (!(Test-Path $_)) {
@@ -36,7 +36,7 @@ param (
     [Alias("Src")]
     [string]$Source,
 
-    [Parameter(Mandatory = $true, Position = 1)]
+    [Parameter(Mandatory = $false, Position = 1)]
     [ValidateScript(
         {
             if (!(Test-Path $_)) {
@@ -73,6 +73,11 @@ param (
     [int]$Offset
 )
 
+#Verify at least one file path was passed
+if (!$PSBoundParameters['Source'] -and !$PSBoundParameters['Encode']) {
+    throw "Must pass at least one input file to capture"
+}
+
 $script = Join-Path $PSScriptRoot -ChildPath "screenshots.vpy"
 #$Frames = @(1,2,3,4)
 [string]$Frames = "[$($Frames -join ",")]"
@@ -90,10 +95,14 @@ if (!$PSBoundParameters['ScreenshotPath']) {
 
 #Set args for vspipe
 $vsArgs = @(
-    '--arg'
-    "source=$Source"
-    '--arg'
-    "encode=$Encode"
+    if ($PSBoundParameters['Source']) {
+        '--arg'
+        "source=$Source"
+    }
+    if ($PSBoundParameters['Encode']) {
+        '--arg'
+        "encode=$Encode"
+    }
     '--arg'
     "screenshots=$ScreenshotPath"
     '--arg'
