@@ -207,11 +207,15 @@ def crop_src(src: tuple, enc: tuple, clip: vs.VideoNode) -> vs.VideoNode:
 """
 
 
-def load_VS_files(lwi_files: tuple, in_files: list, format: str) -> tuple:
-    src = core.lsmas.LWLibavSource(source=in_files[0], format=format, cachefile=lwi_files[0])
-    enc = core.lsmas.LWLibavSource(source=in_files[1], format=format, cachefile=lwi_files[1])
+def load_VS_files(lwi_files: tuple, in_files: list, format: str):
+    if len(lwi_files) == 2:
+        src = core.lsmas.LWLibavSource(source=in_files[0], format=format, cachefile=lwi_files[0])
+        enc = core.lsmas.LWLibavSource(source=in_files[1], format=format, cachefile=lwi_files[1])
+        return (src, enc)
+    else:
+        file = core.lsmas.LWLibavSource(source=in_files[0], format=format, cachefile=lwi_files[0])
+        return file
 
-    return (src, enc)
 
 
 """
@@ -264,10 +268,15 @@ def tonemap(clips: tuple, res: tuple, tonemap: str, exposure=4.5) -> tuple:
 
 
 def frame_info(clips: tuple, title: str) -> tuple:
-    src = awf.FrameInfo(clips[0], "Source")
-    enc = awf.FrameInfo(clips[1], title)
-
-    return (src, enc)
+    if len(clips) > 1:
+        src = awf.FrameInfo(clips[0], "Source")
+        enc = awf.FrameInfo(clips[1], title)
+        return (src, enc)
+    elif len(clips) == 1:
+        clip = awf.FrameInfo(clips[0], title)
+        return (clip, )
+    else:
+        raise InvalidArgumentException("Unknown number of clips passed to frame info")
 
 
 """
@@ -276,7 +285,6 @@ def frame_info(clips: tuple, title: str) -> tuple:
 
 
 def take_screenshots(clips: tuple, folder: PathLike, offset: int, frames: list):
-    src, enc = clips
     # Set offset for test encodes (if passed)
     if offset != 0:
         oframes = [x + offset for x in frames]
@@ -294,15 +302,22 @@ def take_screenshots(clips: tuple, folder: PathLike, offset: int, frames: list):
         if char is not None and char not in chars:
             chars.append(char)
 
-    if len(chars) > 0:
+    if len(chars) == 1:
+        tags = (chr(chars[0] + 1), )
+    elif len(chars) > 1:
         chars.sort()
         # Convert back to char and increment to avoid overwriting
         tags = (chr(chars[-2] + 2), chr(chars[-1] + 2))
     else:
         tags = ("a", "b")
 
-    awf.ScreenGen(src, folder, tags[0], frame_numbers=oframes)
-    awf.ScreenGen(enc, folder, tags[1], frame_numbers=frames)
+    if len(clips) > 1:
+        src, enc = clips
+        awf.ScreenGen(src, folder, tags[0], frame_numbers=oframes)
+        awf.ScreenGen(enc, folder, tags[1], frame_numbers=frames)
+    else:
+        enc = clips[0]
+        awf.ScreenGen(enc, folder, tags[0], frame_numbers=frames)
 
 
 """
@@ -310,36 +325,61 @@ def take_screenshots(clips: tuple, folder: PathLike, offset: int, frames: list):
 """
 
 args = validate_input()
-print(args)
 
-# Get resolution of source and encode.
-src_res = get_resolution(args["source"], type="Source")
-enc_res = get_resolution(args["encode"], type="Encode")
+if "encode" in args and "source" in args:
+    # Get resolution of source and encode.
+    src_res = get_resolution(args["source"], type="Source")
+    enc_res = get_resolution(args["encode"], type="Encode")
 
-# Create LWI filepaths
-lwi_paths = replace_extension([args["source"], args["encode"]])
-# Set screenshot path. If no path is specified, use root of encode
-screenshots = Path(args["encode"]).parent / "screens" if "screenshots" not in args else Path(args["screenshots"])
-print(f"Screenshots directory: '{screenshots}'")
+    # Create LWI filepaths
+    lwi_paths = replace_extension([args["source"], args["encode"]])
+    # Set screenshot path. If no path is specified, use root of encode
+    screenshots = Path(args["encode"]).parent / "screens" if "screenshots" not in args else Path(args["screenshots"])
+    print(f"Screenshots directory: '{screenshots}'")
 
-# Get bit depth based on source resolution
-format = "YUV420P10" if src_res[0] > 3000 else "YUV420P8"
-print(f"Pixel format: {format}")
+    # Load clip files
+    src, enc = load_VS_files(lwi_paths, [args["source"], args["encode"]], format)
+    # Get bit depth based on source
+    format = src.format.name
+    print(f"Pixel format: {format}")
+    # Crop source & resize if downscale
+    src = crop_src(src_res, enc_res, src)
+    # tonemap if UHD
+    if format == "YUV420P10":
+        tonemap_algo = args["tonemap"].lower() if "tonemap" in args else "mobius"
+        exposure = args["exposure"] if "exposure" in args else 4.5
+        src, enc = tonemap(clips=(src, enc), res=enc_res, tonemap=tonemap_algo, exposure=exposure)
 
-# Load clip files
-src, enc = load_VS_files(lwi_paths, [args["source"], args["encode"]], format)
-# Crop source & resize if downscale
-src = crop_src(src_res, enc_res, src)
-# tonemap if UHD
-if format == "YUV420P10":
-    tonemap_algo = args["tonemap"].lower() if "tonemap" in args else "mobius"
-    exposure = args["exposure"] if "exposure" in args else 4.5
-    src, enc = tonemap(clips=(src, enc), res=enc_res, tonemap=tonemap_algo, exposure=exposure)
+    # Generate frame info
+    title = "Encode" if "title" not in args else args["title"]
+    src, enc = frame_info(clips=(src, enc), title=title)
 
-# Generate frame info
-title = "Encode" if "title" not in args else args["title"]
-src, enc = frame_info(clips=(src, enc), title=title)
-
-# Finally...screenshots
-offset = 0 if "offset" not in args else args["offset"]
-take_screenshots(clips=(src, enc), folder=screenshots, offset=offset, frames=args["frames"])
+    # Finally...screenshots
+    offset = 0 if "offset" not in args else args["offset"]
+    take_screenshots(clips=(src, enc), folder=screenshots, offset=offset, frames=args["frames"])
+#If only encode was passed  
+elif "encode" in args and "source" not in args:
+    enc_res = get_resolution(args["encode"], type="Encode")
+    lwi_path = replace_extension([args["encode"]])
+    # Set screenshot path. If no path is specified, use root of input
+    screenshots = Path(args["encode"]).parent / "screens" if "screenshots" not in args else Path(args["screenshots"])
+    print(f"Screenshots directory: '{screenshots}'")
+    #load clip
+    enc = load_VS_files((lwi_path, ), [args["encode"]], format)
+    # Get bit depth based on input
+    format = enc.format.name
+    print(f"Pixel format: {format}")
+    # tonemap if YUV420P10
+    if format == "YUV420P10":
+        tonemap_algo = args["tonemap"].lower() if "tonemap" in args else "mobius"
+        exposure = args["exposure"] if "exposure" in args else 4.5
+        enc = tonemap(clips=(enc, ), res=enc_res, tonemap=tonemap_algo, exposure=exposure)[0]
+        
+    # Generate frame info
+    title = "Encode" if "title" not in args else args["title"]
+    enc = frame_info(clips=(enc, ), title=title)[0]
+    
+    # Finally...screenshots
+    offset = 0 if "offset" not in args else args["offset"]
+    take_screenshots(clips=(enc, ), folder=screenshots, offset=offset, frames=args["frames"])
+    
