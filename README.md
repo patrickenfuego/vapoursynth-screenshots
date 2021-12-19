@@ -60,10 +60,10 @@ The default value is Mobius, but you can specify which one you want using the `t
 
 ```PowerShell
 #Named parameters
-PS > .\Wrapper.ps1 -Encode "C:\Path\file.mkv" -Encode "C:\Path\file2.mkv" `
-                   -Frames 100,200,300 -Title "My Encode" -TonemapType hable
+PS > .\ScreenshotHelper.ps1 -Encode "C:\Path\file.mkv" -Encode "C:\Path\file2.mkv" `
+                            -Frames 100,200,300 -TonemapType hable -Title "My Encode"
 #Positional parameters
-PS > .\Wrapper.ps1 "~/videos/source.mkv" "~/videos/encode.mkv" 100,200,300 "~/videos/screens" hable "My Encode"
+PS > .\ScreenshotHelper.ps1 "~/videos/source.mkv" "~/videos/encode.mkv" 100,200,300 "~/videos/screens" hable "My Encode"
 ```
 
 ### VSPipe
