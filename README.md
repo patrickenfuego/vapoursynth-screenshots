@@ -39,18 +39,20 @@ The default is Mobius, but you can specify which one you want using the `tonemap
 
 > NOTE: PowerShell parameters are case insensitive, whereas Python's are not. Python parameters must be **lowercase**
 
-| Parameter Name      | Description                                                                           | Mandatory     |
-| ------------------- | ------------------------------------------------------------------------------------- | ------------- |
-| **[-]source**       | Path to the source file (or primary file)                                             | <b>*</b>False |
-| **[-]encode**       | Path to the encode file (or secondary file)                                           | <b>*</b>False |
-| **[-]screenshots**  | Optional path to screenshots. If one is not provided, the root of encode will be used | False         |
-| **[-]frames**       | A list of frame numbers for screenshots. Passed as a Python list, i.e. "[1,2,3,4]"    | True          |
-| **[-]offset**       | Optional frame offset for test encodes                                                | False         |
-| **[-]title**        | Title tag for frame info overlay. Applies to encodes. Default is "Encode"             | False         |
-| **[-]tonemap_type** | Tonemap algorithm to use. Equivalent Pwsh parameter is `TonemapType`                  | False         |
-| **[-]exposure**     | Gain to apply to image. Default is 4.5                                                | False         |
+| Parameter Name      | Description                                                                            | Mandatory     |
+| ------------------- | -------------------------------------------------------------------------------------- | ------------- |
+| **[-]source**       | Path to the source file                                                                | <b>*</b>False |
+| **[-]encode**       | Path to the encode file                                                                | <b>*</b>False |
+| **[-]encode2**      | Path to a second encode file                                                           | <b>*</b>False |
+| **[-]screenshots**  | Optional path to screenshots. If one is not provided, the root of encode will be used  | False         |
+| **[-]frames**       | A list of frame numbers for screenshots. Passed as a Python list, i.e. "[1,2,3,4]"     | True          |
+| **[-]offset**       | Optional frame offset for test encodes                                                 | False         |
+| **[-]title**        | Title tag for frame info overlay. Applies to the encode parameter. Default is "Encode" | False         |
+| **[-]title2**       | Title tag for frame info overlay. Applies to encode2 parameter. Default is "Encode 2"  | False         |
+| **[-]tonemap_type** | Tonemap algorithm to use. Equivalent Pwsh parameter is `TonemapType`                   | False         |
+| **[-]exposure**     | Gain to apply to image. Default is 4.5                                                 | False         |
 
-`source` and `encode` are marked with an asterisk because one of the other must be present or an error is thrown (seems sensible, right?).
+Input file parameters are marked with an asterisk because one of them must be present or an error is thrown (seems sensible, right?).
 
 ---
 
@@ -58,14 +60,10 @@ The default is Mobius, but you can specify which one you want using the `tonemap
 
 ### PowerShell
 
-> All PowerShell parameters can be used positionally. See `Get-Help .\ScreenshotHelper.ps1` or read the comments to see them all.
-
 ```PowerShell
 #Named parameters
 PS > .\ScreenshotHelper.ps1 -Encode "C:\Path\file.mkv" -Encode "C:\Path\file2.mkv" `
                             -Frames 100,200,300 -TonemapType hable -Title "My Encode"
-#Positional parameters
-PS > .\ScreenshotHelper.ps1 "~/videos/source.mkv" "~/videos/encode.mkv" 100,200,300 "~/videos/screens" hable "My Encode"
 ```
 
 ### VSPipe
