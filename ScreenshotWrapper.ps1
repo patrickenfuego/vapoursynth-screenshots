@@ -6,9 +6,11 @@
         all arguments are parsed from the global dictionary. This script is meant
         to make passing CLI args less painful
     .PARAMETER Source
-        Path to the source (or primary) file
+        Path to the source file
     .PARAMETER Encode
-        Path to the encoded (or secondary) file
+        Path to an encoded file
+    .PARAMETER Encode2
+        Path to a second encoded file
     .PARAMETER ScreenshotPath
         Optional path to screenshots directory. If not passed, the root of encode 
         will be used instead
@@ -24,7 +26,7 @@
 
 [CmdletBinding()]
 param (
-    [Parameter(Mandatory = $false, Position = 0)]
+    [Parameter(Mandatory = $false)]
     [ValidateScript(
         {
             if (!(Test-Path $_)) {
@@ -36,7 +38,7 @@ param (
     [Alias("Src")]
     [string]$Source,
 
-    [Parameter(Mandatory = $false, Position = 1)]
+    [Parameter(Mandatory = $false)]
     [ValidateScript(
         {
             if (!(Test-Path $_)) {
@@ -48,33 +50,51 @@ param (
     [Alias("Enc")]
     [string]$Encode,
 
-    [Parameter(Mandatory = $true, Position = 2)]
+    [Parameter(Mandatory = $false)]
+    [ValidateScript(
+        {
+            if (!(Test-Path $_)) {
+                throw "Encode2 input path does not exist"
+            }
+            else { $true }
+        }
+    )]
+    [Alias("Enc2")]
+    [string]$Encode2,
+
+    [Parameter(Mandatory = $true)]
     [Alias("F")]
     [int[]]$Frames,
 
-    [Parameter(Mandatory = $false, Position = 3)]
+    [Parameter(Mandatory = $false)]
     [Alias("Screenshots")]
     [string]$ScreenshotPath,
 
-    [Parameter(Mandatory = $false, Position = 4)]
+    [Parameter(Mandatory = $false)]
     [Alias("Tonemap")]
     [string]$TonemapType = "mobius",
 
-    [Parameter(Mandatory = $false, Position = 5)]
+    [Parameter(Mandatory = $false)]
     [Alias("T", "Name")]
     [string]$Title = "Encode",
 
-    [Parameter(Mandatory = $false, Position = 6)]
+    [Parameter(Mandatory = $false)]
+    [Alias("T2", "Name2")]
+    [string]$Title2 = "Encode 2",
+
+    [Parameter(Mandatory = $false)]
     [Alias("E")]
     [double]$Exposure = 4.5,
 
-    [Parameter(Mandatory = $false, Position = 7)]
+    [Parameter(Mandatory = $false)]
     [Alias("O")]
     [int]$Offset
 )
 
 #Verify at least one file path was passed
-if (!$PSBoundParameters['Source'] -and !$PSBoundParameters['Encode']) {
+if (!$PSBoundParameters['Source'] -and 
+    !$PSBoundParameters['Encode'] -and 
+    !$PSBoundParameters['Encode2']) {
     throw "Must pass at least one input file to capture"
 }
 
@@ -103,10 +123,18 @@ $vsArgs = @(
         '--arg'
         "encode=$Encode"
     }
-    '--arg'
-    "screenshots=$ScreenshotPath"
+    if ($PSBoundParameters['Encode2']) {
+        '--arg'
+        "encode2=$Encode2"
+    }
+    if ($PSBoundParameters['ScreenshotPath']) {
+        '--arg'
+        "screenshots=$ScreenshotPath"
+    }
     '--arg'
     "title=$Title"
+    '--arg'
+    "title2=$Title2"
     '--arg'
     "frames=$Frames"
     '--arg'
@@ -114,13 +142,9 @@ $vsArgs = @(
     '--arg'
     "exposure=$Exposure"
     if ($PSBoundParameters['Offset']) {
-        '--args'
+        '--arg'
         "offset=$Offset"
     }
 )
 
 vspipe $vsArgs $script -
-
-
-
-
