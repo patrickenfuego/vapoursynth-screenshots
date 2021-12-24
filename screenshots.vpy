@@ -302,13 +302,14 @@ def take_screenshots(clips: tuple, folder: PathLike, offset: int, frames: list):
     pattern = re.compile("[A-Za-z]")
     chars = list()
     # loop through dir and ensure files are not overwritten
-    for f in folder.iterdir():
-        if f.suffix in (".jpg", ".jpeg", ".png"):
-            char = ord(re.search(pattern, f.name)[0])
-        else:
-            char = None
-        if char is not None and char not in chars:
-            chars.append(char)
+    if folder.exists():
+        for f in folder.iterdir():
+            if f.suffix in (".jpg", ".jpeg", ".png"):
+                char = ord(re.search(pattern, f.name)[0])
+            else:
+                char = None
+            if char is not None and char not in chars:
+                chars.append(char)
 
     if len(chars) == 1:
         tags = (chr(chars[0] + 1), )
@@ -376,14 +377,14 @@ elif "encode" in args and "source" not in args and "encode2" not in args:
     enc_res = get_resolution(args["encode"], type="Encode")
     lwi_path = replace_extension([args["encode"]])
     # Set screenshot path. If no path is specified, use root of input
-    screenshots = Path(args["encode"]).parent.joinpath("screens") if "screenshots" not in args else Path(args["screenshots"])
+    screenshots = args["encode"].parent.joinpath("screens") if "screenshots" not in args else Path(args["screenshots"])
     print(f"Screenshots directory: '{screenshots}'")
     #load clip
     enc = load_VS_files((lwi_path, ), [args["encode"]], format)
     # Get bit depth based on input
     pix_fmt = enc.format.name
     color_prim = enc.get_frame(0).props._Primaries
-    print(f"Pixel format: {format}", f"\nColor Primaries: {color_prim}")
+    print(f"Pixel format: {pix_fmt}", f"\nColor Primaries: {color_prim}")
     # tonemap if YUV420P10 and BT2020
     if pix_fmt == "YUV420P10" and color_prim == 9:
         tonemap_algo = args["tonemap"].lower() if "tonemap" in args else "mobius"
@@ -408,7 +409,7 @@ elif "encode" in args and "encode2" in args:
     lwi_paths = replace_extension([args["encode"], args["encode2"]])
     
     # Set screenshot path. If no path is specified, use root of encode
-    screenshots = Path(args["encode"]).parent.joinpath("screens") if "screenshots" not in args else Path(args["screenshots"])
+    screenshots = args["encode"].parent.joinpath("screens") if "screenshots" not in args else Path(args["screenshots"])
     print(f"Screenshots directory: '{screenshots}'")
 
     # Load clip files
