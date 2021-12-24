@@ -70,7 +70,7 @@ def validate_input():
                 args["encode"] = Path(value)
             else:
                 raise FileNotFoundError("Encode path does not exist")
-            
+
         elif key == "encode2":
             if path_exists(value):
                 args["encode2"] = Path(value)
@@ -82,13 +82,19 @@ def validate_input():
 
         elif key == "frames":
             try:
-                assert "[" in value and "]" in value, "Frames must be in list format: [1,2,3]"
-                frame_convert = value.strip("][").split(",")
-            except AssertionError as msg:
-                print(msg)
+                if "[" in value and "]" in value:
+                    frame_convert = value.strip("][").split(",")
+                elif "(" in value and ")" in value:
+                    frame_convert = value.strip(")(").split(",")
+                else:
+                    frame_convert = value.split(",")
+                args["frames"] = [int(x) for x in frame_convert]
+            except TypeError:
+                print("Frame numbers must be a comma separated list of integer(s)")
                 sys.exit(1)
-
-            args["frames"] = [int(x) for x in frame_convert]
+            except Exception as e:
+                print("Something went wrong:", e.__class__) 
+                sys.exit(1)
 
         elif key == "offset":
             if isinstance(int(value), int):
@@ -98,7 +104,7 @@ def validate_input():
 
         elif key == "title":
             args["title"] = value
-            
+
         elif key == "title2":
             args["title2"] = value
 
@@ -117,12 +123,13 @@ def validate_input():
         else:
             pass
 
-    #Verify that at least one file type is present
+    # Verify that at least one file type is present
     valid = ("source", "encode", "encode2")
     if any(x in valid for x in args.keys()):
         return args
     else:
         raise InvalidArgumentException("At least one file must be passed")
+
 
 """
    --------------- Utility functions ---------------
@@ -194,11 +201,11 @@ def crop_src(src: tuple, enc: tuple, clip: vs.VideoNode) -> vs.VideoNode:
         full_width, full_height = 1280, 720
     else:
         raise InvalidArgumentException("Unsupported resolution")
-    
-    #resize if downscale
+
+    # resize if downscale
     if src[0] > full_width:
         clip = clip.resize.Spline36(width=full_width, height=full_height)
-        
+
     # Calculate top, bottom, left, right crop values
     top = bottom = math.ceil((full_height - enc[1]) / 2)
     left = right = math.ceil((full_width - enc[0]) / 2)
@@ -212,14 +219,16 @@ def crop_src(src: tuple, enc: tuple, clip: vs.VideoNode) -> vs.VideoNode:
 
 
 def load_VS_files(lwi_files: tuple, in_files: list, format: str):
-    if len(lwi_files) == 2:
-        src = core.lsmas.LWLibavSource(source=in_files[0], format=format, cachefile=lwi_files[0])
-        enc = core.lsmas.LWLibavSource(source=in_files[1], format=format, cachefile=lwi_files[1])
-        return (src, enc)
-    else:
-        file = core.lsmas.LWLibavSource(source=in_files[0], format=format, cachefile=lwi_files[0])
-        return file
-
+    clips = tuple()
+    for i in range(len(in_files)):
+        clip = core.lsmas.LWLibavSource(source=in_files[i], format=format, cachefile=lwi_files[i])
+    # if len(lwi_files) == 2:
+    #     src = core.lsmas.LWLibavSource(source=in_files[0], format=format, cachefile=lwi_files[0])
+    #     enc = core.lsmas.LWLibavSource(source=in_files[1], format=format, cachefile=lwi_files[1])
+    #     return (src, enc)
+    # else:
+    #     file = core.lsmas.LWLibavSource(source=in_files[0], format=format, cachefile=lwi_files[0])
+    #     return file
 
 
 """
@@ -282,7 +291,7 @@ def frame_info(clips: tuple, title: Union[str, tuple]) -> tuple:
         return (enc, enc2)
     elif len(clips) == 1:
         clip = awf.FrameInfo(clips[0], title)
-        return (clip, )
+        return (clip,)
     else:
         raise InvalidArgumentException("Unknown number of clips passed to frame info")
 
@@ -312,7 +321,7 @@ def take_screenshots(clips: tuple, folder: PathLike, offset: int, frames: list):
                 chars.append(char)
 
     if len(chars) == 1:
-        tags = (chr(chars[0] + 1), )
+        tags = (chr(chars[0] + 1),)
     elif len(chars) > 1:
         chars.sort()
         # Convert back to char and increment to avoid overwriting
@@ -336,6 +345,15 @@ def take_screenshots(clips: tuple, folder: PathLike, offset: int, frames: list):
 
 args = validate_input()
 
+answer = input(
+    "What type of comparison would you like to do?",
+    "\n1. Remux comparison",
+    "\n2. Source vs. Encode Comparison",
+    "\n3. Encode comparisons",
+)
+
+
+
 if "encode" in args and "source" in args:
     # Get resolution of source and encode.
     src_res = get_resolution(args["source"], type="Source")
@@ -344,18 +362,17 @@ if "encode" in args and "source" in args:
     # Create LWI filepaths
     lwi_paths = replace_extension([args["source"], args["encode"]])
     # Set screenshot path. If no path is specified, use root of encode
-    print("screenshots" in args)
     screenshots = args["encode"].parent.joinpath("screens") if "screenshots" not in args else args["screenshots"]
     print(f"Screenshots directory: '{screenshots}'")
 
     # Load clip files
     src, enc = load_VS_files(lwi_paths, [args["source"], args["encode"]], format)
-    
+
     # Get bit depth based on source
     pix_fmt = src.format.name
     color_prim = src.get_frame(0).props._Primaries
     print(f"Pixel format: {pix_fmt}", f"\nColor Primaries: {color_prim}")
-    
+
     # Crop source & resize if downscale
     src = crop_src(src_res, enc_res, src)
     # tonemap if UHD with BT2020
@@ -371,16 +388,16 @@ if "encode" in args and "source" in args:
     # Finally...screenshots
     offset = 0 if "offset" not in args else args["offset"]
     take_screenshots(clips=(src, enc), folder=screenshots, offset=offset, frames=args["frames"])
-    
-#If only 1 encode was passed  
+
+# If only 1 encode was passed
 elif "encode" in args and "source" not in args and "encode2" not in args:
     enc_res = get_resolution(args["encode"], type="Encode")
     lwi_path = replace_extension([args["encode"]])
     # Set screenshot path. If no path is specified, use root of input
     screenshots = args["encode"].parent.joinpath("screens") if "screenshots" not in args else Path(args["screenshots"])
     print(f"Screenshots directory: '{screenshots}'")
-    #load clip
-    enc = load_VS_files((lwi_path, ), [args["encode"]], format)
+    # load clip
+    enc = load_VS_files((lwi_path,), [args["encode"]], format)
     # Get bit depth based on input
     pix_fmt = enc.format.name
     color_prim = enc.get_frame(0).props._Primaries
@@ -389,17 +406,17 @@ elif "encode" in args and "source" not in args and "encode2" not in args:
     if pix_fmt == "YUV420P10" and color_prim == 9:
         tonemap_algo = args["tonemap"].lower() if "tonemap" in args else "mobius"
         exposure = args["exposure"] if "exposure" in args else 4.5
-        enc = tonemap(clips=(enc, ), res=enc_res, tonemap=tonemap_algo, exposure=exposure)[0]
-        
+        enc = tonemap(clips=(enc,), res=enc_res, tonemap=tonemap_algo, exposure=exposure)[0]
+
     # Generate frame info
     title = "Encode" if "title" not in args else args["title"]
-    enc = frame_info(clips=(enc, ), title=title)[0]
-    
+    enc = frame_info(clips=(enc,), title=title)[0]
+
     # Finally...screenshots
     offset = 0 if "offset" not in args else args["offset"]
-    take_screenshots(clips=(enc, ), folder=screenshots, offset=offset, frames=args["frames"])
-    
-#If 2 encodes were passed
+    take_screenshots(clips=(enc,), folder=screenshots, offset=offset, frames=args["frames"])
+
+# If 2 encodes were passed
 elif "encode" in args and "encode2" in args:
     # Get resolution of source and encode.
     enc_res = get_resolution(args["encode"], type="Encode")
@@ -407,14 +424,14 @@ elif "encode" in args and "encode2" in args:
 
     # Create LWI filepaths
     lwi_paths = replace_extension([args["encode"], args["encode2"]])
-    
+
     # Set screenshot path. If no path is specified, use root of encode
     screenshots = args["encode"].parent.joinpath("screens") if "screenshots" not in args else Path(args["screenshots"])
     print(f"Screenshots directory: '{screenshots}'")
 
     # Load clip files
     enc, enc2 = load_VS_files(lwi_paths, [args["encode"], args["encode2"]], format)
-    
+
     # Get bit depth based on source
     pix_fmt = enc.format.name
     color_prim = enc.get_frame(0).props._Primaries
@@ -432,4 +449,4 @@ elif "encode" in args and "encode2" in args:
 
     # Finally...screenshots
     offset = 0 if "offset" not in args else args["offset"]
-    take_screenshots(clips=(enc, enc2), folder=screenshots, offset=offset, frames=args["frames"])  
+    take_screenshots(clips=(enc, enc2), folder=screenshots, offset=offset, frames=args["frames"])

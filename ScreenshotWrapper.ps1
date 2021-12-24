@@ -36,7 +36,7 @@ param (
         }
     )]
     [Alias("Src")]
-    [string]$Source,
+    [string[]]$Source,
 
     [Parameter(Mandatory = $false)]
     [ValidateScript(
