@@ -36,7 +36,7 @@ param (
         }
     )]
     [Alias("Src")]
-    [string[]]$Source,
+    [string[]]$Sources,
 
     [Parameter(Mandatory = $false)]
     [ValidateScript(
@@ -95,13 +95,12 @@ param (
 if (!$PSBoundParameters['Source'] -and 
     !$PSBoundParameters['Encode'] -and 
     !$PSBoundParameters['Encode2']) {
+        
     throw "Must pass at least one input file to capture"
 }
 
 $script = Join-Path $PSScriptRoot -ChildPath "screenshots.vpy"
-#$Frames = @(1,2,3,4)
 [string]$Frames = "[$($Frames -join ",")]"
-#$Frames.GetType()
 $TonemapType = $TonemapType.ToLower()
 
 #Make sure VS is installed
@@ -131,6 +130,10 @@ $vsArgs = @(
         '--arg'
         "screenshots=$ScreenshotPath"
     }
+    if ($PSBoundParameters['Offset']) {
+        '--arg'
+        "offset=$Offset"
+    }
     '--arg'
     "title=$Title"
     '--arg'
@@ -141,10 +144,7 @@ $vsArgs = @(
     "tonemap_type=$TonemapType"
     '--arg'
     "exposure=$Exposure"
-    if ($PSBoundParameters['Offset']) {
-        '--arg'
-        "offset=$Offset"
-    }
 )
 
 vspipe $vsArgs $script -
+
