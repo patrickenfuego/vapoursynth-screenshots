@@ -1,0 +1,14 @@
+MANIFEST.in
+README.md
+setup.py
+rekt/__init__.py
+rekt/rekt.py
+rekt/rekt_fast.py
+rekt/rektaa.py
+rekt/rektlvls.py
+rekt.egg-info/PKG-INFO
+rekt.egg-info/SOURCES.txt
+rekt.egg-info/dependency_links.txt
+rekt.egg-info/not-zip-safe
+rekt.egg-info/requires.txt
+rekt.egg-info/top_level.txt

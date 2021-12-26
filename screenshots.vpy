@@ -1,19 +1,12 @@
-import vapoursynth as vs
-from vapoursynth import core
-import awsmfunc as awf
-
-from pathlib import Path
-from typing import Union
-from termcolor import colored
-import re
-import math
-import subprocess
-import sys
-
-PathLike = Union[str, Path]
-
-
 """
+____   ____                                                       __  .__            _________                                       .__            __           
+\   \ /   /____  ______   ____  __ _________  _________.__. _____/  |_|  |__        /   _____/ ___________  ____  ____   ____   _____|  |__   _____/  |_  ______ 
+ \   Y   /\__  \ \____ \ /  _ \|  |  \_  __ \/  ___<   |  |/    \   __\  |  \  _____\_____  \_/ ___\_  __ \/ __ \/ __ \ /    \ /  ___/  |  \ /  _ \   __\/  ___/ 
+  \     /  / __ \|  |_> >  <_> )  |  /|  | \/\___ \ \___  |   |  \  | |   Y  \/_____/        \  \___|  | \|  ___|  ___/|   |  \\___ \|   Y  (  <_> )  |  \___ \  
+   \___/  (____  /   __/ \____/|____/ |__|  /____  >/ ____|___|  /__| |___|  /     /_______  /\___  >__|   \___  >___  >___|  /____  >___|  /\____/|__| /____  > 
+               \/|__|                            \/ \/         \/          \/              \/     \/           \/    \/     \/     \/     \/                 \/  
+                                                                                                                                                                 
+
     ARGUMENT PARSING
     
     VS does not have robust argument parsing or direct support for things like argparse,
@@ -39,16 +32,35 @@ PathLike = Union[str, Path]
      
 """
 
+import sys
+from pathlib import Path
+#Add local packages/modules to PYTHONPATH
+sys.path.append(str(Path(__file__).parent.joinpath("packages").absolute()))
+from screenutil import load_VS_files, replace_extension, path_exists, frame_info
+
+import vapoursynth as vs
+from vapoursynth import core
+import awsmfunc as awf
+
+from typing import Union
+from termcolor import colored
+import re
+import math
+import subprocess
+
+
+PathLike = Union[str, Path]
+
 """
     Utility function to verify input paths exist
 """
 
 
-def path_exists(x: PathLike) -> bool:
-    if not Path(x).exists():
-        raise FileNotFoundError(f"{x} does not exist")
-    else:
-        return x
+# def path_exists(x: PathLike) -> bool:
+#     if not Path(x).exists():
+#         raise FileNotFoundError(f"{x} does not exist")
+#     else:
+#         return x
 
 
 """
@@ -93,7 +105,7 @@ def validate_input():
                 print("Frame numbers must be a comma separated list of integer(s)")
                 sys.exit(1)
             except Exception as e:
-                print("Something went wrong:", e.__class__) 
+                print("Something went wrong:", e.__class__)
                 sys.exit(1)
 
         elif key == "offset":
@@ -140,13 +152,13 @@ def validate_input():
 """
 
 
-def replace_extension(files: list) -> tuple:
-    cache_files = tuple()
-    for f in files:
-        extensions = "".join(Path(f).suffixes)
-        cache_files = (*cache_files, Path(str(f).replace(extensions, ".lwi")))
-    else:
-        return cache_files
+# def replace_extension(files: list) -> tuple:
+#     cache_files = tuple()
+#     for f in files:
+#         extensions = "".join(Path(f).suffixes)
+#         cache_files = (*cache_files, Path(str(f).replace(extensions, ".lwi")))
+#     else:
+#         return cache_files
 
 
 """
@@ -218,17 +230,17 @@ def crop_src(src: tuple, enc: tuple, clip: vs.VideoNode) -> vs.VideoNode:
 """
 
 
-def load_VS_files(lwi_files: tuple, in_files: list, format: str):
-    clips = tuple()
-    for i in range(len(in_files)):
-        clip = core.lsmas.LWLibavSource(source=in_files[i], format=format, cachefile=lwi_files[i])
-    # if len(lwi_files) == 2:
-    #     src = core.lsmas.LWLibavSource(source=in_files[0], format=format, cachefile=lwi_files[0])
-    #     enc = core.lsmas.LWLibavSource(source=in_files[1], format=format, cachefile=lwi_files[1])
-    #     return (src, enc)
-    # else:
-    #     file = core.lsmas.LWLibavSource(source=in_files[0], format=format, cachefile=lwi_files[0])
-    #     return file
+# def load_VS_files(lwi_files: tuple, in_files: list, format: str):
+#     clips = tuple()
+#     for i in range(len(in_files)):
+#         clip = core.lsmas.LWLibavSource(source=in_files[i], format=format, cachefile=lwi_files[i])
+#     if len(lwi_files) == 2:
+#         src = core.lsmas.LWLibavSource(source=in_files[0], format=format, cachefile=lwi_files[0])
+#         enc = core.lsmas.LWLibavSource(source=in_files[1], format=format, cachefile=lwi_files[1])
+#         return (src, enc)
+#     else:
+#         file = core.lsmas.LWLibavSource(source=in_files[0], format=format, cachefile=lwi_files[0])
+#         return file
 
 
 """
@@ -280,20 +292,20 @@ def tonemap(clips: tuple, res: tuple, tonemap: str, exposure=4.5) -> tuple:
 """
 
 
-def frame_info(clips: tuple, title: Union[str, tuple]) -> tuple:
-    if len(clips) > 1 and isinstance(title, str):
-        src = awf.FrameInfo(clips[0], "Source")
-        enc = awf.FrameInfo(clips[1], title)
-        return (src, enc)
-    elif len(clips) > 1 and isinstance(title, tuple):
-        enc = awf.FrameInfo(clips[0], title[0])
-        enc2 = awf.FrameInfo(clips[1], title[1])
-        return (enc, enc2)
-    elif len(clips) == 1:
-        clip = awf.FrameInfo(clips[0], title)
-        return (clip,)
-    else:
-        raise InvalidArgumentException("Unknown number of clips passed to frame info")
+# def frame_info(clips: tuple, title: Union[str, tuple]) -> tuple:
+#     if len(clips) > 1 and isinstance(title, str):
+#         src = awf.FrameInfo(clips[0], "Source")
+#         enc = awf.FrameInfo(clips[1], title)
+#         return (src, enc)
+#     elif len(clips) > 1 and isinstance(title, tuple):
+#         enc = awf.FrameInfo(clips[0], title[0])
+#         enc2 = awf.FrameInfo(clips[1], title[1])
+#         return (enc, enc2)
+#     elif len(clips) == 1:
+#         clip = awf.FrameInfo(clips[0], title)
+#         return (clip,)
+#     else:
+#         raise InvalidArgumentException("Unknown number of clips passed to frame info")
 
 
 """
@@ -345,13 +357,12 @@ def take_screenshots(clips: tuple, folder: PathLike, offset: int, frames: list):
 
 args = validate_input()
 
-answer = input(
-    "What type of comparison would you like to do?",
-    "\n1. Remux comparison",
-    "\n2. Source vs. Encode Comparison",
-    "\n3. Encode comparisons",
-)
-
+# answer = input(
+#     "What type of comparison would you like to do?",
+#     "\n1. Remux comparison",
+#     "\n2. Source vs. Encode Comparison",
+#     "\n3. Encode comparisons",
+# )
 
 
 if "encode" in args and "source" in args:
@@ -366,7 +377,7 @@ if "encode" in args and "source" in args:
     print(f"Screenshots directory: '{screenshots}'")
 
     # Load clip files
-    src, enc = load_VS_files(lwi_paths, [args["source"], args["encode"]], format)
+    src, enc = load_VS_files(lwi_paths, [args["source"], args["encode"]])
 
     # Get bit depth based on source
     pix_fmt = src.format.name
@@ -383,7 +394,7 @@ if "encode" in args and "source" in args:
 
     # Generate frame info
     title = "Encode" if "title" not in args else args["title"]
-    src, enc = frame_info(clips=(src, enc), title=title)
+    src, enc = frame_info(clips=(src, enc), titles=("Source", title))
 
     # Finally...screenshots
     offset = 0 if "offset" not in args else args["offset"]
@@ -393,15 +404,19 @@ if "encode" in args and "source" in args:
 elif "encode" in args and "source" not in args and "encode2" not in args:
     enc_res = get_resolution(args["encode"], type="Encode")
     lwi_path = replace_extension([args["encode"]])
+    
     # Set screenshot path. If no path is specified, use root of input
     screenshots = args["encode"].parent.joinpath("screens") if "screenshots" not in args else Path(args["screenshots"])
     print(f"Screenshots directory: '{screenshots}'")
+    
     # load clip
-    enc = load_VS_files((lwi_path,), [args["encode"]], format)
+    enc = load_VS_files((lwi_path,), [args["encode"]])[0]
+    
     # Get bit depth based on input
     pix_fmt = enc.format.name
     color_prim = enc.get_frame(0).props._Primaries
     print(f"Pixel format: {pix_fmt}", f"\nColor Primaries: {color_prim}")
+    
     # tonemap if YUV420P10 and BT2020
     if pix_fmt == "YUV420P10" and color_prim == 9:
         tonemap_algo = args["tonemap"].lower() if "tonemap" in args else "mobius"
@@ -410,7 +425,7 @@ elif "encode" in args and "source" not in args and "encode2" not in args:
 
     # Generate frame info
     title = "Encode" if "title" not in args else args["title"]
-    enc = frame_info(clips=(enc,), title=title)[0]
+    enc = frame_info(clips=(enc,), titles=title)[0]
 
     # Finally...screenshots
     offset = 0 if "offset" not in args else args["offset"]
@@ -430,12 +445,13 @@ elif "encode" in args and "encode2" in args:
     print(f"Screenshots directory: '{screenshots}'")
 
     # Load clip files
-    enc, enc2 = load_VS_files(lwi_paths, [args["encode"], args["encode2"]], format)
+    enc, enc2 = load_VS_files(lwi_paths, [args["encode"], args["encode2"]])
 
     # Get bit depth based on source
     pix_fmt = enc.format.name
     color_prim = enc.get_frame(0).props._Primaries
     print(f"Pixel format: {pix_fmt}", f"\nColor Primaries: {color_prim}")
+    
     # tonemap if UHD
     if pix_fmt == "YUV420P10" and color_prim == 9:
         tonemap_algo = args["tonemap"].lower() if "tonemap" in args else "mobius"
@@ -445,7 +461,7 @@ elif "encode" in args and "encode2" in args:
     # Generate frame info
     title = "Encode" if "title" not in args else args["title"]
     title2 = "Encode 2" if "title2" not in args else args["title2"]
-    enc, enc2 = frame_info(clips=(enc, enc2), title=(title, title2))
+    enc, enc2 = frame_info(clips=(enc, enc2), titles=(title, title2))
 
     # Finally...screenshots
     offset = 0 if "offset" not in args else args["offset"]

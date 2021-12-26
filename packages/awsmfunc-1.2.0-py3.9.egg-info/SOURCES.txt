@@ -1,0 +1,12 @@
+README.md
+setup.py
+awsmfunc/__init__.py
+awsmfunc/awsmfunc.py
+awsmfunc/detect.py
+awsmfunc/py.typed
+awsmfunc.egg-info/PKG-INFO
+awsmfunc.egg-info/SOURCES.txt
+awsmfunc.egg-info/dependency_links.txt
+awsmfunc.egg-info/not-zip-safe
+awsmfunc.egg-info/requires.txt
+awsmfunc.egg-info/top_level.txt

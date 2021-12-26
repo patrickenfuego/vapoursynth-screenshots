@@ -1,0 +1,13 @@
+..\awsmfunc\__init__.py
+..\awsmfunc\__pycache__\__init__.cpython-39.pyc
+..\awsmfunc\__pycache__\awsmfunc.cpython-39.pyc
+..\awsmfunc\__pycache__\detect.cpython-39.pyc
+..\awsmfunc\awsmfunc.py
+..\awsmfunc\detect.py
+..\awsmfunc\py.typed
+PKG-INFO
+SOURCES.txt
+dependency_links.txt
+not-zip-safe
+requires.txt
+top_level.txt
