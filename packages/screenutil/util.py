@@ -15,7 +15,7 @@ PathLike = Union[Path, str]
 
 
 """
-    Utility function to verify input paths exist
+    Verify input path(s) exist
 """
 
 def path_exists(x: PathLike) -> bool:
@@ -43,11 +43,11 @@ def replace_extension(files: list) -> tuple:
 """
 
 
-def load_VS_files(lwi_files: tuple, in_files: list):
-    clips = tuple()
+def load_VS_files(lwi_files: tuple, in_files: list) -> list:
+    clips = list()
     for i in range(len(in_files)):
         clip = core.lsmas.LWLibavSource(source=in_files[i], cachefile=lwi_files[i])
-        clips = (*clips, clip)
+        clips.append(clip)
     
     return clips
 
@@ -56,7 +56,7 @@ def load_VS_files(lwi_files: tuple, in_files: list):
 """
 
 
-def frame_info(clips: tuple, titles: Union[str, tuple]) -> list:
+def frame_info(clips: list, titles: Union[str, tuple]) -> list:
     ret_clips = list()
     for i in range(len(clips)):
         clip = awf.FrameInfo(clips[i], titles[i])
