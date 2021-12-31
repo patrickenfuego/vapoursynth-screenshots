@@ -35,12 +35,11 @@ ____   ____                                                       __  .__       
 import sys
 from pathlib import Path
 #Add local packages/modules to PYTHONPATH
-sys.path.append(str(Path(__file__).parent.joinpath("packages").absolute()))
+#sys.path.append(str(Path(__file__).parent.joinpath("packages").absolute()))
 from screenutil import load_VS_files, replace_extension, path_exists, frame_info
 
 import vapoursynth as vs
-from vapoursynth import core
-import awsmfunc as awf
+from packages.modules.awsmfunc import awsmfunc as awf
 
 from typing import Union
 from termcolor import colored
@@ -222,7 +221,7 @@ def crop_src(src: tuple, enc: tuple, clip: vs.VideoNode) -> vs.VideoNode:
     top = bottom = math.ceil((full_height - enc[1]) / 2)
     left = right = math.ceil((full_width - enc[0]) / 2)
 
-    return core.std.Crop(clip, left, right, top, bottom)
+    return vs.core.std.Crop(clip, left, right, top, bottom)
 
 
 """
@@ -233,13 +232,13 @@ def crop_src(src: tuple, enc: tuple, clip: vs.VideoNode) -> vs.VideoNode:
 # def load_VS_files(lwi_files: tuple, in_files: list, format: str):
 #     clips = tuple()
 #     for i in range(len(in_files)):
-#         clip = core.lsmas.LWLibavSource(source=in_files[i], format=format, cachefile=lwi_files[i])
+#         clip = vs.core.lsmas.LWLibavSource(source=in_files[i], format=format, cachefile=lwi_files[i])
 #     if len(lwi_files) == 2:
-#         src = core.lsmas.LWLibavSource(source=in_files[0], format=format, cachefile=lwi_files[0])
-#         enc = core.lsmas.LWLibavSource(source=in_files[1], format=format, cachefile=lwi_files[1])
+#         src = vs.core.lsmas.LWLibavSource(source=in_files[0], format=format, cachefile=lwi_files[0])
+#         enc = vs.core.lsmas.LWLibavSource(source=in_files[1], format=format, cachefile=lwi_files[1])
 #         return (src, enc)
 #     else:
-#         file = core.lsmas.LWLibavSource(source=in_files[0], format=format, cachefile=lwi_files[0])
+#         file = vs.core.lsmas.LWLibavSource(source=in_files[0], format=format, cachefile=lwi_files[0])
 #         return file
 
 
@@ -253,7 +252,7 @@ def crop_src(src: tuple, enc: tuple, clip: vs.VideoNode) -> vs.VideoNode:
 def tonemap(clips: tuple, res: tuple, tonemap: str, exposure=4.5) -> tuple:
     tm_clips = tuple()
     for clip in clips:
-        clip = core.resize.Spline36(
+        clip = vs.core.resize.Spline36(
             clip=clip,
             format=vs.RGBS,
             width=res[0],
@@ -266,13 +265,13 @@ def tonemap(clips: tuple, res: tuple, tonemap: str, exposure=4.5) -> tuple:
         )
 
         if tonemap == "hable":
-            clip = core.tonemap.Hable(clip=clip, exposure=exposure)
+            clip = vs.core.tonemap.Hable(clip=clip, exposure=exposure)
         elif tonemap == "reinhard":
-            clip = core.tonemap.Reinhard(clip=clip, exposure=exposure)
+            clip = vs.core.tonemap.Reinhard(clip=clip, exposure=exposure)
         else:
-            clip = core.tonemap.Mobius(clip=clip, exposure=exposure)
+            clip = vs.core.tonemap.Mobius(clip=clip, exposure=exposure)
 
-        clip = core.resize.Spline36(
+        clip = vs.core.resize.Spline36(
             clip=clip,
             format=vs.YUV420P10,
             primaries_in_s="2020",
