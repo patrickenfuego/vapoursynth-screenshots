@@ -19,7 +19,7 @@ ____   ____                                                       __  .__       
     
     ---- VALID ARGS (Everything else will be ignored) ----
     
-    source:         Path to the source file
+    sources:        Path to the source file(s)
     encode:         Path to the encode file
     encode2:        Path to the second encode file (or secondary file)
     screenshots:    Optional path to screenshots. If one is not provided, the root of encode will be used
@@ -51,17 +51,6 @@ import subprocess
 
 PathLike = Union[str, Path]
 
-"""
-    Utility function to verify input paths exist
-"""
-
-
-# def path_exists(x: PathLike) -> bool:
-#     if not Path(x).exists():
-#         raise FileNotFoundError(f"{x} does not exist")
-#     else:
-#         return x
-
 
 """
     Validate and parse input from global dictionary
@@ -71,11 +60,22 @@ PathLike = Union[str, Path]
 def validate_input():
     args = dict()
     for key, value in dict(globals()).items():
-        if key == "source":
-            if path_exists(value):
-                args["source"] = Path(value)
+        if key == "sources":
+            if "," in value:
+                sources = value.split(",")
+                source_confirmed = list()
+                for s in sources:
+                    if path_exists(s):
+                        source_confirmed.append(s)
+                    else:
+                        raise FileNotFoundError(f"{s} does not exist")
+                else:
+                    args["sources"] = source_confirmed
             else:
-                raise FileNotFoundError("Encode 2 path does not exist")
+                if path_exists(value):
+                    args["sources"] = Path(value)
+                else:
+                    raise FileNotFoundError("Source path does not exist")
 
         elif key == "encode":
             if path_exists(value):
@@ -147,27 +147,6 @@ def validate_input():
    --------------- Utility functions ---------------
 """
 
-"""
-    Replaces input extensions with the .lwi suffix for cache files
-"""
-
-
-# def replace_extension(files: list) -> tuple:
-#     cache_files = tuple()
-#     for f in files:
-#         extensions = "".join(Path(f).suffixes)
-#         cache_files = (*cache_files, Path(str(f).replace(extensions, ".lwi")))
-#     else:
-#         return cache_files
-
-
-"""
-    Determines the dimensions and returns them
-    using ffprobe
-    
-    TODO: Verify ffprobe is available via PATH
-"""
-
 
 def get_resolution(path: PathLike, type: str) -> tuple:
     ffprobe = [
@@ -225,23 +204,6 @@ def crop_src(src: tuple, enc: tuple, clip: vs.VideoNode) -> vs.VideoNode:
     return core.std.Crop(clip, left, right, top, bottom)
 
 
-"""
-    Creates index and vs.VideoNode files using LWLibav
-"""
-
-
-# def load_VS_files(lwi_files: tuple, in_files: list, format: str):
-#     clips = tuple()
-#     for i in range(len(in_files)):
-#         clip = core.lsmas.LWLibavSource(source=in_files[i], format=format, cachefile=lwi_files[i])
-#     if len(lwi_files) == 2:
-#         src = core.lsmas.LWLibavSource(source=in_files[0], format=format, cachefile=lwi_files[0])
-#         enc = core.lsmas.LWLibavSource(source=in_files[1], format=format, cachefile=lwi_files[1])
-#         return (src, enc)
-#     else:
-#         file = core.lsmas.LWLibavSource(source=in_files[0], format=format, cachefile=lwi_files[0])
-#         return file
-
 
 """
     Tonemap screenshots based on input and exposure
@@ -250,14 +212,14 @@ def crop_src(src: tuple, enc: tuple, clip: vs.VideoNode) -> vs.VideoNode:
 """
 
 
-def tonemap(clips: tuple, res: tuple, tonemap: str, exposure=4.5) -> tuple:
+def tonemap(clips: list, dim: tuple, tonemap: str, exposure=4.5) -> tuple:
     tm_clips = tuple()
     for clip in clips:
         clip = core.resize.Spline36(
             clip=clip,
             format=vs.RGBS,
-            width=res[0],
-            height=res[1],
+            width=dim[0],
+            height=dim[1],
             matrix_in_s="2020ncl",
             range_in_s="limited",
             transfer_in_s="st2084",
@@ -288,32 +250,11 @@ def tonemap(clips: tuple, res: tuple, tonemap: str, exposure=4.5) -> tuple:
 
 
 """
-    Add frame info to screenshots
-"""
-
-
-# def frame_info(clips: tuple, title: Union[str, tuple]) -> tuple:
-#     if len(clips) > 1 and isinstance(title, str):
-#         src = awf.FrameInfo(clips[0], "Source")
-#         enc = awf.FrameInfo(clips[1], title)
-#         return (src, enc)
-#     elif len(clips) > 1 and isinstance(title, tuple):
-#         enc = awf.FrameInfo(clips[0], title[0])
-#         enc2 = awf.FrameInfo(clips[1], title[1])
-#         return (enc, enc2)
-#     elif len(clips) == 1:
-#         clip = awf.FrameInfo(clips[0], title)
-#         return (clip,)
-#     else:
-#         raise InvalidArgumentException("Unknown number of clips passed to frame info")
-
-
-"""
     Call ScreenGen to generate the screenshots
 """
 
 
-def take_screenshots(clips: tuple, folder: PathLike, offset: int, frames: list):
+def take_screenshots(clips: list, folder: PathLike, offset: int, frames: list):
     # Set offset for test encodes (if passed)
     if offset != 0:
         oframes = [x + offset for x in frames]
@@ -365,19 +306,19 @@ args = validate_input()
 # )
 
 
-if "encode" in args and "source" in args:
+if "encode" in args and "sources" in args:
     # Get resolution of source and encode.
-    src_res = get_resolution(args["source"], type="Source")
+    src_res = get_resolution(args["sources"], type="Source")
     enc_res = get_resolution(args["encode"], type="Encode")
 
     # Create LWI filepaths
-    lwi_paths = replace_extension([args["source"], args["encode"]])
+    lwi_paths = replace_extension([args["sources"], args["encode"]])
     # Set screenshot path. If no path is specified, use root of encode
     screenshots = args["encode"].parent.joinpath("screens") if "screenshots" not in args else args["screenshots"]
     print(f"Screenshots directory: '{screenshots}'")
 
     # Load clip files
-    src, enc = load_VS_files(lwi_paths, [args["source"], args["encode"]])
+    src, enc = load_VS_files(lwi_paths, [args["sources"], args["encode"]])
 
     # Get bit depth based on source
     pix_fmt = src.format.name
@@ -390,18 +331,18 @@ if "encode" in args and "source" in args:
     if pix_fmt == "YUV420P10" and color_prim == 9:
         tonemap_algo = args["tonemap"].lower() if "tonemap" in args else "mobius"
         exposure = args["exposure"] if "exposure" in args else 4.5
-        src, enc = tonemap(clips=(src, enc), res=enc_res, tonemap=tonemap_algo, exposure=exposure)
+        src, enc = tonemap(clips=[src, enc], dim=enc_res, tonemap=tonemap_algo, exposure=exposure)
 
     # Generate frame info
     title = "Encode" if "title" not in args else args["title"]
-    src, enc = frame_info(clips=(src, enc), titles=("Source", title))
+    src, enc = frame_info(clips=[src, enc], titles=("Source", title))
 
     # Finally...screenshots
     offset = 0 if "offset" not in args else args["offset"]
-    take_screenshots(clips=(src, enc), folder=screenshots, offset=offset, frames=args["frames"])
+    take_screenshots(clips=[src, enc], folder=screenshots, offset=offset, frames=args["frames"])
 
 # If only 1 encode was passed
-elif "encode" in args and "source" not in args and "encode2" not in args:
+elif "encode" in args and "sources" not in args and "encode2" not in args:
     enc_res = get_resolution(args["encode"], type="Encode")
     lwi_path = replace_extension([args["encode"]])
     
@@ -421,15 +362,15 @@ elif "encode" in args and "source" not in args and "encode2" not in args:
     if pix_fmt == "YUV420P10" and color_prim == 9:
         tonemap_algo = args["tonemap"].lower() if "tonemap" in args else "mobius"
         exposure = args["exposure"] if "exposure" in args else 4.5
-        enc = tonemap(clips=(enc,), res=enc_res, tonemap=tonemap_algo, exposure=exposure)[0]
+        enc = tonemap(clips=[enc,], res=enc_res, tonemap=tonemap_algo, exposure=exposure)[0]
 
     # Generate frame info
     title = "Encode" if "title" not in args else args["title"]
-    enc = frame_info(clips=(enc,), titles=title)[0]
+    enc = frame_info(clips=[enc,], titles=title)[0]
 
     # Finally...screenshots
     offset = 0 if "offset" not in args else args["offset"]
-    take_screenshots(clips=(enc,), folder=screenshots, offset=offset, frames=args["frames"])
+    take_screenshots(clips=[enc,], folder=screenshots, offset=offset, frames=args["frames"])
 
 # If 2 encodes were passed
 elif "encode" in args and "encode2" in args:
@@ -456,13 +397,13 @@ elif "encode" in args and "encode2" in args:
     if pix_fmt == "YUV420P10" and color_prim == 9:
         tonemap_algo = args["tonemap"].lower() if "tonemap" in args else "mobius"
         exposure = args["exposure"] if "exposure" in args else 4.5
-        enc, enc2 = tonemap(clips=(enc, enc2), res=enc_res, tonemap=tonemap_algo, exposure=exposure)
+        enc, enc2 = tonemap(clips=[enc, enc2], res=enc_res, tonemap=tonemap_algo, exposure=exposure)
 
     # Generate frame info
     title = "Encode" if "title" not in args else args["title"]
     title2 = "Encode 2" if "title2" not in args else args["title2"]
-    enc, enc2 = frame_info(clips=(enc, enc2), titles=(title, title2))
+    enc, enc2 = frame_info(clips=[enc, enc2], titles=(title, title2))
 
     # Finally...screenshots
     offset = 0 if "offset" not in args else args["offset"]
-    take_screenshots(clips=(enc, enc2), folder=screenshots, offset=offset, frames=args["frames"])
+    take_screenshots(clips=[enc, enc2], folder=screenshots, offset=offset, frames=args["frames"])

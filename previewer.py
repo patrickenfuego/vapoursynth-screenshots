@@ -14,6 +14,7 @@ Uses
 
 
 import sys
+import re
 from pathlib import Path
 #Add local packages/modules to PYTHONPATH
 sys.path.append(str(Path(__file__).parent.joinpath("packages").absolute()))
@@ -50,8 +51,12 @@ def validate_input():
                 for f in files:
                     if path_exists(f): confirmed.append(f)
                 args["inputs"] = confirmed
-                        
-    
+        if key == "resolution":
+            pattern = re.compile("^(\d+)x(\d+)$")
+            if pattern.match(value):
+                width, height = pattern.group(1, 2)
+                args["resolution"] = (int(width), int(height))
+            
     return args
 
 
@@ -63,7 +68,8 @@ args = validate_input()
 
 lwi_files = replace_extension(args["inputs"])
 clips = load_VS_files(lwi_files=lwi_files, in_files=args["inputs"])
-Preview(clips[0])
+
+Preview([*clips], slider=True, fullscreen=True)
 
 
 # if len(clips) == 1:

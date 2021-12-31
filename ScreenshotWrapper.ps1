@@ -92,10 +92,10 @@ param (
 )
 
 #Verify at least one file path was passed
-if (!$PSBoundParameters['Source'] -and 
+if (!$PSBoundParameters['Sources'] -and 
     !$PSBoundParameters['Encode'] -and 
     !$PSBoundParameters['Encode2']) {
-        
+
     throw "Must pass at least one input file to capture"
 }
 
@@ -114,9 +114,9 @@ if (!$PSBoundParameters['ScreenshotPath']) {
 
 #Set args for vspipe
 $vsArgs = @(
-    if ($PSBoundParameters['Source']) {
+    if ($PSBoundParameters['Sources']) {
         '--arg'
-        "source=$Source"
+        "sources=$($Sources -join ', ')"
     }
     if ($PSBoundParameters['Encode']) {
         '--arg'
