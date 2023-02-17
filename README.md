@@ -34,7 +34,7 @@ When capturing screenshots for multiple encodes, I highly recommend using the sa
 
 ## Dependencies
 
-For installing dependencies, I *highly* recommend using the [VSRepo GUI](https://github.com/theChaosCoder/VSRepoGUI) so you don't have to hunt down all of the various GitHub repos and keep them updated. However, I list the various dependencies below if you wish to manage them manually.
+For installing dependencies on Windows, I *highly* recommend using the [VSRepo GUI](https://github.com/theChaosCoder/VSRepoGUI) so you don't have to hunt down all of the various GitHub repos and keep them updated. However, I list the various dependencies below if you wish to manage them manually.
 
 ### Python
 
@@ -72,7 +72,7 @@ For loading clips, either `lsmas` or `ffms2` are required. `ffms2` is preferred 
 
 Plugins must be placed inside the `plugins64` directory inside of the VapourSynth installation directory. For users of VSRepo, plugins are installed at `C:\Users\<Username>\AppData\Roaming\VaporSynth\plugins64`.
 
-I've included plugins for Windows users under the `bin` directory, although I might not keep them up to date.
+I've included plugins for Windows users under the `bin` directory, although I might not keep them up to date. Copy them into your `plugins64` directory (see above).
 
 ---
 
