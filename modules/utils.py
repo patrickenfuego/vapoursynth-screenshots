@@ -102,8 +102,8 @@ def crop_file(clip: vs.VideoNode,
               height: int,
               mod_crop: int = 2) -> vs.VideoNode:
     """
-    Helper function for cropping files before processing
-    :param clip: Clip to crop
+    Function for cropping files before processing
+    :param clip: Clip to crop`
     :param width: Crop width
     :param height: Crop height
     :param mod_crop: Crop video in accordance to the modulus value specified
@@ -124,10 +124,10 @@ def crop_file(clip: vs.VideoNode,
         right += 1
         left += 1
 
-    print(f"Crop values:\nLeft: {left}\nRight: {right}\nTop: {top}\nBottom: {bottom}\n")
+    print(f"Crop values:\nLeft: {left}\nRight: {right}\nTop: {top}\nBottom: {bottom}")
     dim_width = src_width - (left + right)
     dim_height = src_height - (top + bottom)
-    print(f"Dimensions: {dim_width}x{dim_height}")
+    print(f"Dimensions: {dim_width}x{dim_height}\n")
 
     return core.std.Crop(clip, left, right, top, bottom)
 
@@ -217,6 +217,8 @@ def prepare_clips(clips: list[vs.VideoNode],
         clips = [awf.FrameInfo(c[0], c[1]) for c in clips]
     elif add_frame_info:
         clips = [awf.FrameInfo(c, f"Clip {i}") for i, c in enumerate(clips)]
+    else:
+        print("No frame info overlay selected")
 
     return clips
 
