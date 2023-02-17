@@ -70,7 +70,7 @@ def parse_args():
     parser.add_argument('--frames', '-f', nargs='+', metavar='FRAMES', type=int,
                         help="Screenshot frames. If running tests, be sure to set '--offset'")
     parser.add_argument('--random_frames', '-r', nargs=3, metavar='RFRAMES', type=int,
-                        help="Generate random frames in the form [start, stop, count]. If running tests, be sure to set '--offset'")
+                        help="Generate random frames in the form 'start stop count'. If running tests, be sure to set '--offset'")
     parser.add_argument('--offset', '-o', nargs='?', metavar='OFFSET', type=int, default=0,
                         help="Offset (in frames) from source. Useful for comparing test encodes")
     parser.add_argument('--crop', '-c', nargs='+', metavar='CROP', type=int,
@@ -85,8 +85,10 @@ def parse_args():
                         help='Path to folder containing encoded file(s). Replaces --encodes')
     parser.add_argument('--resize_kernel', '-k', metavar='KERNEL', type=str, nargs='?', default='spline36',
                         help='Specify kernel used for resizing (if applicable). Default is spline36')
+    parser.add_argument('--load_filter', '-lf', type=str, choices=('lsmas', 'ffms2'), default='ffms2',
+                        help="Filter used to load & index clips. Default is 'ffms2'")
     parser.add_argument('--no_frame_info', '-ni', action='store_false',
-                        help="Don't add frame info overlay to clips. Default behavior adds them")
+                        help="Don't add frame info overlay to clips. Default behavior is enabled")
     args = parser.parse_args()
 
     if not args.frames and not args.random_frames:
@@ -103,19 +105,26 @@ def parse_args():
             print(f"Failed to generate output folder: {e}. Using source root instead")
             args.output_directory = args.source.parent
     else:
-        # Auto increment directory name based on existing number of screenshot directories
+        # don't overwrite
         screen_count = sum(1 for d in args.source.parent.iterdir() if d.is_dir() and 'screens' in d.stem)
         args.output_directory = args.source.parent / f'screens t{screen_count + 1}-offset_{args.offset}'
         args.output_directory.mkdir(parents=True, exist_ok=True)
 
     if not args.encodes and not args.input_directory:
         files = [args.source]
-        if not args.crop:
-            print("WARNING: No crop values were provided. The source will be uncropped.")
-        if not args.titles:
-            args.titles = ['Source']
     else:
         files = [args.source, *args.encodes]
+
+    # Making assumption - probably didn't add 'Source' as a title
+    if args.titles and len(files) - len(args.titles) == 1:
+        args.titles.insert(0, 'Source')
+    # Only source passed, no title
+    elif not args.titles and len(files) == 1:
+        args.titles = ['Source']
+    # Set titles to file names if not passed
+    elif not args.titles and len(files) > 1:
+        names = [str(f.stem) for f in files[1:]]
+        args.titles = ['Source', *names]
 
     return (files,
             args.crop,
@@ -126,8 +135,8 @@ def parse_args():
             args.no_frame_info,
             args.frames,
             args.random_frames,
-            args.offset if args.offset else 0
-            )
+            args.offset if args.offset else 0,
+            args.load_filter[0] if type(args.load_filter) is list else args.load_filter)
 
 
 def generate_screenshots(clips: list[vs.VideoNode],
@@ -152,7 +161,7 @@ def generate_screenshots(clips: list[vs.VideoNode],
     else:
         src_frames = frames
 
-    # Generate screenshot tags. Increment chars to prevent overwriting
+    # Generate tags. Increment chars to prevent overwriting
     for file in folder.iterdir():
         if file.suffix in ('.jpg', '.jpeg', '.png'):
             char = ord(re.search("[A-Za-z]", file.name)[0])
@@ -168,7 +177,7 @@ def generate_screenshots(clips: list[vs.VideoNode],
                 last = tags[-1]
                 tags.append(chr(ord(last) + 1))
 
-    # Generate screenshots for source. Pop src tag to prevent conflict
+    # screenshots for source. Pop src tag to prevent conflict
     awf.ScreenGen(clips[0], folder, tags[0], frame_numbers=src_frames)
     tags.pop(0)
     for i, clip in enumerate(clips[1:]):
@@ -180,10 +189,10 @@ def generate_random_frames(clips: list[vs.VideoNode],
     """
     Generate random frames for screenshots.
 
-    This function takes the list value of frame_range in the form [start, stop, count] to generate
-    random frames used for generating screenshots.
+    This function takes input in the form [start, stop, count] to generate sequential
+    frames randomly.
 
-    :param clips: Encoded clips to process. Used to get frame counts
+    :param clips: Encoded clips. Used to get frame counts where the smallest value is used for stop
     :param frame_range: Frame range and count in the form [start, stop, count]
     :return: A list of random, sequential frames
     """
@@ -193,7 +202,7 @@ def generate_random_frames(clips: list[vs.VideoNode],
     if frame_range[0] > frame_count:
         raise ValueError("random_frames: Start frame is greater than the smallest clip's end frame.")
 
-    # Handle potential out-of-bounds errors if stop is greater than frame count
+    # Handle out-of-bounds errors if stop is greater than frame count
     stop = frame_range[1] if frame_range[1] < frame_count - 5 else frame_count - 5
     rand_frames = random.sample(range(frame_range[0], stop), frame_range[2])
     rand_frames.sort()
@@ -211,31 +220,35 @@ def main():
      overlay,
      frames,
      rand_frames,
-     offset) = parse_args()
+     offset,
+     load_filter) = parse_args()
 
     print("Source: ", files[0])
     print("Encodes: ", pformat(files[1:]))
 
-    # Making assumption - Probably didn't add 'Source' as a title
-    if titles and len(files) - len(titles) == 1:
-        titles.insert(0, 'Source')
-
-    # Load clips
+    # Load from dir or load files
     if in_folder:
-        clips = load_clips(folder=in_folder)
+        clips = load_clips(folder=in_folder, load_filter=load_filter)
     else:
-        clips = load_clips(files=files)
+        clips = load_clips(files=files, load_filter=load_filter)
 
-    # Generate random frames using only the encoded clips
-    if rand_frames:
-        frames = generate_random_frames(clips[1:], rand_frames)
+    if len(clips) == 1:
+        if not crop:
+            print("WARNING: No crop values were provided. The source will be uncropped.")
+            crop = [clips[0].width, clips[0].height]
+        if rand_frames:
+            frames = generate_random_frames(clips, rand_frames)
+    elif len(clips) > 1:
+        if rand_frames:
+            frames = generate_random_frames(clips[1:], rand_frames)
+        # If no crop passed, use encode 1 dimensions
+        if not crop:
+            crop = [clips[1].width, clips[1].height]
+        # Check if source requires resizing
+        clips[0] = verify_resize(clips, kernel=kernel)
+    else:
+        raise ValueError("The number of clips could not be determined, or an unexpected value was received")
 
-    # If custom crop wasn't passed, use encode dimensions
-    if not crop and len(files) > 1:
-        crop = [clips[1].width, clips[1].height]
-
-    # Check if source requires resizing and resize if needed
-    clips[0] = verify_resize(clips, kernel=kernel)
     # Crop, Tonemap (if applicable), and Frame Info (if applicable)
     kwargs = {
         'clips': clips,
@@ -245,7 +258,6 @@ def main():
     }
     clips = prepare_clips(**kwargs)
 
-    # Generate screenshots
     generate_screenshots(clips, out_folder, frames, offset)
 
 
