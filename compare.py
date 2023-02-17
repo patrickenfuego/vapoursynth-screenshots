@@ -68,6 +68,8 @@ def parse_args():
     parser.add_argument('--preview_resolution', '-p', metavar='RESOLUTION', type=str, nargs='?',
                         default='1080p', choices=['720p', '1080p', '1440p', '2160p'],
                         help='Preview output window resolution. Default is 1080p (1920x1080)')
+    parser.add_argument('--load_filter', '-lf', type=str, choices=('lsmas', 'ffms2'), default='ffms2',
+                        help="Filter used to load & index clips. Default is 'ffms2'")
     parser.add_argument('--no_frame_info', '-ni', action='store_false',
                         help="Don't add frame info overlay to clips. Default behavior adds them")
 
@@ -87,11 +89,20 @@ def parse_args():
             args.preview_resolution if isinstance(args.preview_resolution, str) else args.preview_resolution[0],
             args.resize_kernel,
             args.no_frame_info,
-            args.frames)
+            args.frames,
+            args.load_filter[0] if type(args.load_filter) is list else args.load_filter)
 
 
 def main():
-    files, crop, titles, folder, res, kernel, overlay, frames = parse_args()
+    (files,
+     crop,
+     titles,
+     folder,
+     res,
+     kernel,
+     overlay,
+     frames,
+     load_filter) = parse_args()
 
     print("Source: ", files[0])
     print("Encodes: ", pformat(files[1:]))
@@ -102,9 +113,9 @@ def main():
 
     # Load clips
     if folder:
-        clips = load_clips(folder=folder)
+        clips = load_clips(folder=folder, load_filter=load_filter)
     else:
-        clips = load_clips(files=files)
+        clips = load_clips(files=files, load_filter=load_filter)
 
     # If frame range was specified
     if frames and len(frames) == 2:
