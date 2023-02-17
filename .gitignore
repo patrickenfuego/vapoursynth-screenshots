@@ -1,3 +1,4 @@
 test.py
 .vscode
 .idea
+**/__pycache__/**
