@@ -109,6 +109,7 @@ For properly tonemapping DoVi, additional plugins are required. See [Dependencie
 | `--resize_kernel`    | `-k`  | Specify a resizing kernel to use for source on upscaled/downscaled encodes (make sure screenshots match)                          | False        |
 | `--no_frame_info`    | `-ni` | Don't add frame overlay with name, frame number, picture type, etc. Default enabled                                               | False        |
 | `--crop`             | `-c`  | Optional custom crop dimensions to use. Default uses the dimensions of the first encode passed. Set this if only passing `source` | False        |
+| `--load_filter`      | `-lf` | Filter used to load & index clips. Default is `ffms2`                                                                             | False        |
 
 ---
 
