@@ -67,9 +67,9 @@ def verify_resize(clips: list[vs.VideoNode],
     if src_width - enc_width > 600:
         type_scale = 'Downscale'
         if src_width // enc_width == 2:
-            resized_width, resized_height = 1920, 1080
+            resized_width, resized_height = DIMENSIONS['1080p']
         elif src_width // enc_width == 3 or src_width // enc_width == 1:
-            resized_width, resized_height = 1280, 720
+            resized_width, resized_height = DIMENSIONS['720p']
         else:
             raise ValueError(
                 f"Unable to determine downscale resizing ratio for dimensions '{enc_width}x{enc_height}'."
@@ -78,9 +78,9 @@ def verify_resize(clips: list[vs.VideoNode],
     elif enc_width - src_width > 600:
         type_scale = 'Upscale'
         if enc_width // src_width == 2 or enc_width // src_width == 3:
-            resized_width, resized_height = 3840, 2160
+            resized_width, resized_height = DIMENSIONS['2160p']
         elif enc_width // src_width == 1:
-            resized_width, resized_height = 1920, 1080
+            resized_width, resized_height = DIMENSIONS['1080p']
         else:
             raise ValueError(
                 f"Unable to determine upscale resizing ratio for dimensions '{enc_width}x{enc_height}'."
