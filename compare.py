@@ -25,6 +25,8 @@ Run help to view all available options::
 import vapoursynth as vs
 
 import argparse
+import argcomplete
+from argcomplete.completers import ChoicesCompleter
 from pprint import pformat
 
 from modules import (
@@ -42,50 +44,63 @@ core = vs.core
 def parse_args():
     parser = argparse.ArgumentParser(
         description=(
-            'CLI script for comparing media files using VapourSynth. This allows you '
-            'to view files in a preview (similar to VS Interleave function) without the '
-            'need to use vspipe or the VS Editor, which is very convenient! You can simply '
-            'run it like a normal python script. Requires dependencies, make sure to install '
-            'everything in requirements.txt.'
+            "CLI script for comparing media files using VapourSynth. This allows you "
+            "to view files in a preview (similar to VS Interleave function) without the "
+            "need to use vspipe or the VS Editor, which is very convenient! You can simply "
+            "run it like a normal python script. Requires dependencies, make sure to install "
+            "'opencv-contrib-python'."
         ),
         epilog='view module created by UniversalAI. All credit goes to them.'
     )
+    argcomplete.autocomplete(parser)
 
-    parser.add_argument('source', nargs=1, metavar='SOURCE', type=path_exists,
+    parser.add_argument('source', nargs='?', metavar='SOURCE', type=path_exists,
                         help='Path to source file. Required')
     parser.add_argument('--frames', '-f', nargs=2, metavar='FRAMES', type=int,
-                        help="Frame range to evaluate, in the form 'START END'. Useful for comparing tests")
-    parser.add_argument('--crop', '-c', nargs='+', metavar='CROP', type=int, required=True,
-                        help='Crop dimensions for files. All files must use the same values')
+                        help="Frame range to evaluate, in the form 'START END'. Useful for comparing test encodes")
+    parser.add_argument('--crop', '-c', nargs=2, metavar='CROP', type=int,
+                        help='Crop dimensions for files in the form WIDTH HEIGHT. All files should use the same values')
     parser.add_argument('--encodes', '-e', metavar='ENCODES', type=path_exists, nargs='+',
                         help='Paths to encoded file(s) you wish to compare')
     parser.add_argument('--titles', '-t', metavar='TITLES', type=str, nargs='+',
                         help='ScreenGen titles for files. Should match the order of --encodes')
-    parser.add_argument('--folder', '-d', metavar='FOLDER', type=path_exists, nargs=1,
+    parser.add_argument('--input_directory', '-d', metavar='IN_FOLDER', type=path_exists, nargs='?',
                         help='Path to folder containing encoded file(s). Replaces --encodes')
-    parser.add_argument('--resize_kernel', '-k', metavar='KERNEL', type=str, nargs=1, default='spline36',
-                        help='Specify kernel used for resizing (if applicable). Default is spline36')
+    parser.add_argument('--resize_kernel', '-k', metavar='KERNEL', type=str, nargs='?', default='spline36',
+                        help="Specify kernel used for resizing (if encodes are upscaled/downscaled). Default is 'spline36'")
     parser.add_argument('--preview_resolution', '-p', metavar='RESOLUTION', type=str, nargs='?',
-                        default='1080p', choices=['720p', '1080p', '1440p', '2160p'],
-                        help='Preview output window resolution. Default is 1080p (1920x1080)')
+                        default='1080p', choices=('720p', '1080p', '1440p', '2160p'),
+                        help='Preview window resolution, which can be different from source. Default is 1080p (1920x1080)')
     parser.add_argument('--load_filter', '-lf', type=str, choices=('lsmas', 'ffms2'), default='ffms2',
                         help="Filter used to load & index clips. Default is 'ffms2'")
     parser.add_argument('--no_frame_info', '-ni', action='store_false',
-                        help="Don't add frame info overlay to clips. Default behavior adds them")
+                        help="Don't add frame info overlay to clips. This flag negates the default behavior")
 
     args = parser.parse_args()
 
-    if not args.encodes and not args.folder:
+    if not args.encodes and not args.input_directory:
         raise FileNotFoundError(
-            "No encodes passed. Specify encodes via '--encodes' or a folder containing encodes via '--folder'"
+            "No comparison files provided. Specify encodes via '--encodes' or a folder containing encodes "
+            "via '--input_directory'."
         )
 
     files = [args.source, *args.encodes]
 
+    # Making assumption - probably didn't add 'Source' as a title
+    if args.titles and len(files) - len(args.titles) == 1:
+        args.titles.insert(0, 'Source')
+    # Only source passed, no title
+    elif not args.titles and len(files) == 1:
+        args.titles = ['Source']
+    # Set titles to file names if not passed
+    elif not args.titles and len(files) > 1:
+        names = [str(f.stem) for f in files[1:]]
+        args.titles = ['Source', *names]
+
     return (files,
             args.crop,
             args.titles,
-            args.folder,
+            args.input_directory,
             args.preview_resolution if isinstance(args.preview_resolution, str) else args.preview_resolution[0],
             args.resize_kernel,
             args.no_frame_info,
@@ -118,11 +133,17 @@ def main():
         clips = load_clips(files=files, load_filter=load_filter)
 
     # If frame range was specified
-    if frames and len(frames) == 2:
+    if frames and frames[0] < frames[1]:
         clips[0] = clips[0][frames[0]:frames[1]+1]
+    elif frames and frames[0] >= frames[1]:
+        raise ValueError("Invalid frame range. Start of range must be less than end")
 
+    # If crop not passed, use encode1 dimensions
+    if not crop:
+        crop = [clips[1].width, clips[1].height]
     # Check if source requires resizing and resize if needed
     clips[0] = verify_resize(clips, kernel=kernel)
+
     # Crop, Tonemap (if applicable), and Frame Info (if applicable)
     kwargs = {
         'clips': clips,
