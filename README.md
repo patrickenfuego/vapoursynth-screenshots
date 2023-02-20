@@ -12,8 +12,13 @@ A collection of scripts for previewing clips and generating screenshots with Vap
   - [Other Features](#other-features)
     - [Previewing Clips](#previewing-clips)
     - [Tonemapping](#tonemapping)
-  - [Parameters](#parameters)
+  - [Arguments](#arguments)
+    - [Shared Arguments](#shared-arguments)
+    - [Screenshots Only](#screenshots-only)
+    - [Compare Only](#compare-only)
   - [Examples](#examples)
+    - [Compare](#compare)
+    - [Screenshots](#screenshots)
   - [Troubleshooting](#troubleshooting)
     - [Python Can't Find VapourSynth](#python-cant-find-vapoursynth)
     - [Feature x Does Not Work](#feature-x-does-not-work)
@@ -52,6 +57,7 @@ Download the [VapourSynth](https://github.com/vapoursynth/vapoursynth/releases) 
   - This module includes support for several other optional plugins and scripts not included with this repo. See their docs for more details
 - [opencv-contrib-python](https://pypi.org/project/opencv-contrib-python/) (only required if you want to use the `compare.py` functionality)
   - Previewing clips before generating screenshots is accomplished via the [view](https://github.com/UniversalAl/view) module, which is not included in PyPI so I have added it to the repo under `modules`. This is the core dependency needed for this feature
+- [argcomplete](https://kislyuk.github.io/argcomplete/#) (optional argument completer for Linux shells)
 
 To make life easy, use the `requirements.txt` file included as it will install all of the additional dependencies needed by the packages above:
 
@@ -72,7 +78,7 @@ For loading clips, either `lsmas` or `ffms2` are required. `ffms2` is preferred 
 
 Plugins must be placed inside the `plugins64` directory inside of the VapourSynth installation directory. For users of VSRepo, plugins are installed at `C:\Users\<Username>\AppData\Roaming\VaporSynth\plugins64`.
 
-I've included plugins for Windows users under the `bin` directory, although I might not keep them up to date. Copy them into your `plugins64` directory (see above).
+I've included some compiled plugins for both Windows and Linux users under the `bin` directory, although I might not keep them up to date. Copy them into your `plugins64` directory (see above).
 
 ---
 
@@ -81,6 +87,10 @@ I've included plugins for Windows users under the `bin` directory, although I mi
 ### Previewing Clips
 
 If you wish to preview clips before generating screenshots, use the `compare.py` file. This functionality utilizes the `view` module, and unlike most other methods, does not require `vspipe` or `vsedit` which is incredibly convenient as you can run it like a normal Python file. The OpenCV Python module is required - see [Dependencies](#dependencies) above.
+
+If you wish to compare test encode(s) vs. the source, specify the frame range using the `--frames`/`-f` argument. This will slice the source to ensure frames match during comparison. Depending on where the video is sliced, slight adjustments might be required to ensure all video files are aligned.
+
+You can also take screenshots in the preview window using keybindings, although they will be missing some features included with the `screenshots.py` module.
 
 ### Tonemapping
 
@@ -92,28 +102,62 @@ For properly tonemapping DoVi, additional plugins are required. See [Dependencie
 
 ---
 
-## Parameters
+## Arguments
 
-> A \* denotes that one or the other is required
+> A \* denotes that an argument is required only if a similar argument isn't already passed (i.e., `--frames` vs `--random_frames`)
 
-| Parameter Name       | Alias | Description                                                                                                                       | Mandatory    |
-| -------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| `--source`           | None  | Path to the source file. Positional                                                                                               | True         |
-| `--encodes`          | `-e`  | Space delimited list of encode files                                                                                              | False        |
-| `--frames`           | `-f`  | Space delimited list of screenshot frame numbers                                                                                  | <b>*</b>True |
-| `--random_frames`    | `-r`  | Generate random frames between `start` & `stop`. Input is space delimited in the form `start stop count`                          | <b>*</b>True |
-| `--titles`           | `-t`  | Space delimited list of titles for the encodes. Must match the number of encodes passed                                           | False        |
-| `--offset`           | `-o`  | Optional frame offset from source. Used for test encodes                                                                          | False        |
-| `--input_directory`  | `-d`  | Path to an input directory containing encodes to screenshot                                                                       | False        |
-| `--output_directory` | `-od` | Output directory path. Default uses the root folder for `--source`                                                                | False        |
-| `--resize_kernel`    | `-k`  | Specify a resizing kernel to use for source on upscaled/downscaled encodes (make sure screenshots match)                          | False        |
-| `--no_frame_info`    | `-ni` | Don't add frame overlay with name, frame number, picture type, etc. Default enabled                                               | False        |
-| `--crop`             | `-c`  | Optional custom crop dimensions to use. Default uses the dimensions of the first encode passed. Set this if only passing `source` | False        |
-| `--load_filter`      | `-lf` | Filter used to load & index clips. Default is `ffms2`                                                                             | False        |
+### Shared Arguments
+
+| Full Argument Name  | Alias | Description                                                                                                                       | Mandatory: `screenshots` / `compare` |
+| ------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `--source`          | None  | Path to the source file. Positional                                                                                               | True / True                          |
+| `--encodes`         | `-e`  | Space delimited list of encode files                                                                                              | False / <b>*</b>True                 |
+| `--frames`          | `-f`  | Space delimited list of screenshot frame numbers. For `compare`, this accepts a range in the form 'START STOP'                    | <b>*</b>True / False                 |
+| `--titles`          | `-t`  | Space delimited list of titles for the encodes. Must match the number of encodes passed                                           | False / False                        |
+| `--offset`          | `-o`  | Optional frame offset from source. Used for test encodes                                                                          | False / False                        |
+| `--input_directory` | `-d`  | Path to an input directory containing encodes to screenshot                                                                       | False / <b>*</b>True                 |
+| `--resize_kernel`   | `-k`  | Specify a resizing kernel to use for source on upscaled/downscaled encodes (make sure screenshots match)                          | False / False                        |
+| `--no_frame_info`   | `-ni` | Don't add frame overlay with name, frame number, picture type, etc. Overlay is added by default                                   | False / False                        |
+| `--crop`            | `-c`  | Optional custom crop dimensions to use. Default uses the dimensions of the first encode passed. Set this if only passing `source` | False / False                        |
+| `--load_filter`     | `-lf` | Filter used to load & index clips. Default is `ffms2`                                                                             | False / False                        |
+
+### Screenshots Only
+
+| Full Argument Name   | Alias | Description                                                                                              | Mandatory    |
+| -------------------- | ----- | -------------------------------------------------------------------------------------------------------- | ------------ |
+| `--output_directory` | `-od` | Output directory path for saved screenshots. Default behavior uses the root folder for `--source`        | False        |
+| `--random_frames`    | `-r`  | Generate random frames between `start` & `stop`. Input is space delimited in the form `start stop count` | <b>*</b>True |
+
+### Compare Only
+
+| Full Argument Name     | Alias | Description                                                                                                          | Mandatory |
+| ---------------------- | ----- | -------------------------------------------------------------------------------------------------------------------- | --------- |
+| `--preview_resolution` | `-p`  | Preview window resolution to better match the monitor, which is then scaled based on crop values. Default is '1080p' | False     |
 
 ---
 
 ## Examples
+
+### Compare
+
+```bash
+# Compare a source vs. an encode
+~$ python3 compare.py "$HOME/Videos/MySource/Source.mkv" --encodes "$HOME/Videos/MySource/Encode1.mkv"
+```
+
+```bash
+# Set view resolution to 1440p. Note this doesn't have to match the source resolution
+~$ python3 compare.py "$HOME/Videos/MySource/Source.mkv" --encodes "$HOME/Videos/MySource/Encode1.mkv" \
+    --preview_resolution '1440p'
+```
+
+```PowerShell
+# View frames between 1000-5000. Useful for comparing source against test encodes
+PS > python compare.py "$HOME\Videos\MySource\Source.mkv" --encodes "$HOME\Videos\MySource\Encode1.mkv" `
+     "$HOME\Videos\MySource\Encode2.mkv" "$HOME\Videos\MySource\Encode3.mkv" --frames 1000 5000
+```
+
+### Screenshots
 
 ```PowerShell
 # Generate screenshots for source and 3 encodes
@@ -129,8 +173,8 @@ PS > python screenshots.py "$HOME\Videos\MySource\Source.mkv" --encodes "$HOME\V
 ```
 
 ```bash
-# Specify an offset of 10000 frames to align test encodes
-~$ python3 screenshots.py "$HOME/Videos/MySource/Source.mkv" --input_directory "$HOME/Videos/MySource" \
+# Specify an offset of 10000 frames to align test encodes with source
+~$ python3 screenshots.py "$HOME/Videos/MySource/Source.mkv" --encodes "$HOME/Videos/MySource/Encode1.mkv" \
     --offset 10000 --frames 2000 4000 6000
 ```
 
@@ -150,7 +194,7 @@ PS > python screenshots.py "$HOME\Videos\MySource\Source.mkv" --encodes "$HOME\V
 
 ### Python Can't Find VapourSynth
 
-If Python can't detect VapourSynth after installation, navigate to the VapourSynth installation directory and **copy** (not cut) the dynamic libraries `vapoursynth.dll`/`vapoursynth.so` and `vsscript.dll`/`vsscript.so` and paste them into the root directory of your Python installation directory.
+If Python can't detect VapourSynth after installation, navigate to the VapourSynth installation directory and **copy** (not cut) the dynamic libraries `vapoursynth.dll`/`vapoursynth.so` and `vsscript.dll`/`vsscript.so` and paste them into either the root directory of your Python installation directory or one of the `site-packages` directories.
 
 ### Feature x Does Not Work
 
