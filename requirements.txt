@@ -3,3 +3,4 @@ numpy>=1.24.0
 opencv-contrib-python>=4.6.0.68
 VapourSynth>=60
 vsutil>=0.8.0
+argcomplete>=2.0.0
