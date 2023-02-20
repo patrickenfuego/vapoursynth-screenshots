@@ -108,31 +108,40 @@ For properly tonemapping DoVi, additional plugins are required. See [Dependencie
 
 ### Shared Arguments
 
-| Full Argument Name  | Alias | Description                                                                                                                       | Mandatory: `screenshots` / `compare` |
-| ------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| `--source`          | None  | Path to the source file. Positional                                                                                               | True / True                          |
-| `--encodes`         | `-e`  | Space delimited list of encode files                                                                                              | False / <b>*</b>True                 |
-| `--frames`          | `-f`  | Space delimited list of screenshot frame numbers. For `compare`, this accepts a range in the form 'START STOP'                    | <b>*</b>True / False                 |
-| `--titles`          | `-t`  | Space delimited list of titles for the encodes. Must match the number of encodes passed                                           | False / False                        |
-| `--offset`          | `-o`  | Optional frame offset from source. Used for test encodes                                                                          | False / False                        |
-| `--input_directory` | `-d`  | Path to an input directory containing encodes to screenshot                                                                       | False / <b>*</b>True                 |
-| `--resize_kernel`   | `-k`  | Specify a resizing kernel to use for source on upscaled/downscaled encodes (make sure screenshots match)                          | False / False                        |
-| `--no_frame_info`   | `-ni` | Don't add frame overlay with name, frame number, picture type, etc. Overlay is added by default                                   | False / False                        |
-| `--crop`            | `-c`  | Optional custom crop dimensions to use. Default uses the dimensions of the first encode passed. Set this if only passing `source` | False / False                        |
-| `--load_filter`     | `-lf` | Filter used to load & index clips. Default is `ffms2`                                                                             | False / False                        |
+| Full Argument Name | Alias | Description                                                                                                                                                        | Mandatory: `screenshots` / `compare` |
+| ------------------ | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ |
+| `source`           | None  | Path to the source file. Positional                                                                                                                                | True / True                          |
+| `encodes`          | `-e`  | Space delimited list of encode files                                                                                                                               | False / <b>*</b>True                 |
+| `frames`           | `-f`  | Space delimited list of screenshot frame numbers. For `compare`, this accepts a range in the form 'START STOP'                                                     | <b>*</b>True / False                 |
+| `titles`           | `-t`  | Space delimited list of titles for the encodes. Must match the number of encodes passed                                                                            | False / False                        |
+| `input_directory`  | `-d`  | Path to an input directory containing encodes to screenshot                                                                                                        | False / <b>*</b>True                 |
+| `resize_kernel`    | `-k`  | Specify a resizing kernel to use for source on upscaled/downscaled encodes (make sure screenshots match)                                                           | False / False                        |
+| `no_frame_info`    | `-ni` | Don't add frame overlay with name, frame number, picture type, etc. This flag negates the default behavior                                                                    | False / False                        |
+| `crop`             | `-c`  | Optional custom crop dimensions to use. Default uses the dimensions of the first encode passed. Set this if only passing `source` or wish to use a different value | False / False                        |
+| `load_filter`      | `-lf` | Filter used to load & index clips. Default is `ffms2`                                                                                                              | False / False                        |
 
 ### Screenshots Only
 
-| Full Argument Name   | Alias | Description                                                                                              | Mandatory    |
-| -------------------- | ----- | -------------------------------------------------------------------------------------------------------- | ------------ |
-| `--output_directory` | `-od` | Output directory path for saved screenshots. Default behavior uses the root folder for `--source`        | False        |
-| `--random_frames`    | `-r`  | Generate random frames between `start` & `stop`. Input is space delimited in the form `start stop count` | <b>*</b>True |
+| Full Argument Name | Alias | Description                                                                                                                  | Mandatory    |
+| ------------------ | ----- | ---------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| `output_directory` | `-od` | Output directory path for saved screenshots. Default behavior uses the root folder for `source`                              | False        |
+| `offset`           | `-o`  | Optional frame offset from source. Used for aligning test encodes                                                            | False        |
+| `random_frames`    | `-r`  | Generate `count` random, sequential frames between `start` & `stop`. Input is space delimited in the form `start stop count` | <b>*</b>True |
 
 ### Compare Only
 
-| Full Argument Name     | Alias | Description                                                                                                          | Mandatory |
-| ---------------------- | ----- | -------------------------------------------------------------------------------------------------------------------- | --------- |
-| `--preview_resolution` | `-p`  | Preview window resolution to better match the monitor, which is then scaled based on crop values. Default is '1080p' | False     |
+The preview resolution is used to scale dimensions for your viewing monitor, and is unrelated to the dimensions of the video files. Once a resolution is specified, it is then scaled based on the crop values to eliminate stretching.
+
+Options for `preview_resolution`:
+
+- 720p
+- 1080p
+- 1440p
+- 2160p
+
+| Full Argument Name   | Alias | Description                                                               | Mandatory |
+| -------------------- | ----- | ------------------------------------------------------------------------- | --------- |
+| `preview_resolution` | `-p`  | Preview window resolution to better match the monitor. Default is '1080p' | False     |
 
 ---
 
