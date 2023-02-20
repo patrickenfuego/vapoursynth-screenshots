@@ -45,7 +45,7 @@ def verify_resize(clips: list[vs.VideoNode],
 
     Determine if the source requires resizing before cropping by calculating and comparing ratios
     between the source and the first encode passed. If encode clips of varying aspect ratios are
-    passed, this function will fail.
+    passed, this function will return suboptimal results.
     :param clips: Clips to process. Clip 0 should always be the source, followed by any encodes
     :param kernel: Resizing kernel to use
     :param kwargs: Additional keyword arguments to pass to the kernel resizer
@@ -72,7 +72,7 @@ def verify_resize(clips: list[vs.VideoNode],
             resized_width, resized_height = 1280, 720
         else:
             raise ValueError(
-                f"Unable to determine downscale resizing ratio for dimensions '{enc_width}x{enc_height}'"
+                f"Unable to determine downscale resizing ratio for dimensions '{enc_width}x{enc_height}'."
             )
     # Upscale. Try to account for column cropping
     elif enc_width - src_width > 600:
@@ -83,7 +83,7 @@ def verify_resize(clips: list[vs.VideoNode],
             resized_width, resized_height = 1920, 1080
         else:
             raise ValueError(
-                f"Unable to determine upscale resizing ratio for dimensions '{enc_width}x{enc_height}'"
+                f"Unable to determine upscale resizing ratio for dimensions '{enc_width}x{enc_height}'."
             )
     # No resizing
     else:
@@ -102,8 +102,8 @@ def crop_file(clip: vs.VideoNode,
               height: int,
               mod_crop: int = 2) -> vs.VideoNode:
     """
-    Function for cropping files before processing
-    :param clip: Clip to crop`
+    Function for cropping files before processing.
+    :param clip: Clip to crop
     :param width: Crop width
     :param height: Crop height
     :param mod_crop: Crop video in accordance to the modulus value specified
@@ -153,8 +153,10 @@ def load_clips(files: list = None,
 
     if load_filter == 'ffms2':
         load_filter = core.ffms2.Source
+        suffix = '.ffindex'
     elif load_filter == 'lsmas':
         load_filter = core.lsmas.LWLibavSource
+        suffix = '.lwi'
     else:
         raise ValueError("Unknown load filter specified. Options are 'ffms2' and 'lsmas'")
 
@@ -166,7 +168,7 @@ def load_clips(files: list = None,
     if folder:
         files = [f for f in folder.iterdir() if f.suffix in SUFFIXES and f.stem != source_name]
 
-    clips = [load_filter(f) for f in files]
+    clips = [load_filter(f, cachefile=f.with_suffix(suffix)) for f in files]
 
     return clips
 
@@ -218,7 +220,7 @@ def prepare_clips(clips: list[vs.VideoNode],
     elif add_frame_info:
         clips = [awf.FrameInfo(c, f"Clip {i}") for i, c in enumerate(clips)]
     else:
-        print("No frame info overlay selected")
+        print("Frame overlay disabled")
 
     return clips
 
