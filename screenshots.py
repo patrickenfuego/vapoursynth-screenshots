@@ -39,6 +39,8 @@ import vapoursynth as vs
 import awsmfunc as awf
 
 import argparse
+import argcomplete
+from argcomplete.completers import ChoicesCompleter
 import re
 import random
 from pathlib import Path
@@ -62,8 +64,9 @@ def parse_args():
             'automatically generate frame info overlays unless instructed otherwise. '
             'Oh yeah, it automatically tonemaps HDR clips, too!'
         ),
-        epilog='View module created by UniversalAI, awsmfunc created by OpusGang. All credit goes to them.'
+        epilog='Awsmfunc created by OpusGang. All credit goes to them.'
     )
+    argcomplete.autocomplete(parser)
 
     parser.add_argument('source', nargs='?', metavar='SOURCE', type=path_exists,
                         help='Path to source file. Required')
@@ -74,21 +77,22 @@ def parse_args():
     parser.add_argument('--offset', '-o', nargs='?', metavar='OFFSET', type=int, default=0,
                         help="Offset (in frames) from source. Useful for comparing test encodes")
     parser.add_argument('--crop', '-c', nargs='+', metavar='CROP', type=int,
-                        help='Use custom crop dimensions instead of using the encode dimensions. All files must use the same values')
+                        help="Use custom dimensions instead of using encode1 values in the form 'WIDTH HEIGHT'. All files should use the same values")
     parser.add_argument('--encodes', '-e', metavar='ENCODES', type=path_exists, nargs='+',
-                        help='Paths to encoded file(s) you wish to compare')
+                        help='Paths to encoded file(s) you wish to screenshot')
     parser.add_argument('--titles', '-t', metavar='TITLES', type=str, nargs='+',
-                        help='ScreenGen titles for files. Should match the order of --encodes')
+                        help='ScreenGen titles for the overlay. Should match the order of --encodes')
     parser.add_argument('--input_directory', '-d', metavar='IN_FOLDER', type=path_exists, nargs=1,
                         help='Path to folder containing encoded file(s). Replaces --encodes')
     parser.add_argument('--output_directory', '-od', metavar='OUT_FOLDER', type=Path, nargs='?',
-                        help='Path to folder containing encoded file(s). Replaces --encodes')
+                        help='Path where output screenshots are saved. Default behavior saves them in the parent of source')
     parser.add_argument('--resize_kernel', '-k', metavar='KERNEL', type=str, nargs='?', default='spline36',
-                        help='Specify kernel used for resizing (if applicable). Default is spline36')
+                        help="Specify kernel used for resizing (if encodes are upscaled/downscaled). Default is 'spline36'")
     parser.add_argument('--load_filter', '-lf', type=str, choices=('lsmas', 'ffms2'), default='ffms2',
                         help="Filter used to load & index clips. Default is 'ffms2'")
     parser.add_argument('--no_frame_info', '-ni', action='store_false',
-                        help="Don't add frame info overlay to clips. Default behavior is enabled")
+                        help="Don't add frame info overlay to clips. This flag negates the default behavior")
+
     args = parser.parse_args()
 
     if not args.frames and not args.random_frames:
@@ -103,7 +107,7 @@ def parse_args():
             args.output_directory.mkdir(parents=True)
         except OSError as e:
             print(f"Failed to generate output folder: {e}. Using source root instead")
-            args.output_directory = args.source.parent
+            args.output_directory = args.source.parent / f'screens-offset_{args.offset}'
     else:
         # don't overwrite
         screen_count = sum(1 for d in args.source.parent.iterdir() if d.is_dir() and 'screens' in d.stem)
@@ -247,7 +251,7 @@ def main():
         # Check if source requires resizing
         clips[0] = verify_resize(clips, kernel=kernel)
     else:
-        raise ValueError("The number of clips could not be determined, or an unexpected value was received")
+        raise ValueError("The number of clips could not be determined, or an unexpected value was received.")
 
     # Crop, Tonemap (if applicable), and Frame Info (if applicable)
     kwargs = {
