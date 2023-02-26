@@ -13,6 +13,7 @@ A collection of scripts for previewing clips and generating screenshots with Vap
     - [Previewing Clips](#previewing-clips)
     - [Tonemapping](#tonemapping)
   - [Arguments](#arguments)
+    - [Screenshot Notes](#screenshot-notes)
     - [Shared Arguments](#shared-arguments)
     - [Screenshots Only](#screenshots-only)
     - [Compare Only](#compare-only)
@@ -23,6 +24,7 @@ A collection of scripts for previewing clips and generating screenshots with Vap
     - [Python Can't Find VapourSynth](#python-cant-find-vapoursynth)
     - [Feature x Does Not Work](#feature-x-does-not-work)
     - [Python Can't Load Module 'utils.py'](#python-cant-load-module-utilspy)
+    - [Error `Tonemap: Function does not take argument(s) named tone_mapping_function_s`](#error-tonemap-function-does-not-take-arguments-named-tone_mapping_function_s)
   - [Acknowledgements](#acknowledgements)
 
 ---
@@ -104,19 +106,29 @@ For properly tonemapping DoVi, additional plugins are required. See [Dependencie
 
 ## Arguments
 
-> A \* denotes that an argument is required only if a similar argument isn't already passed (i.e., `--frames` vs `--random_frames`)
+### Screenshot Notes
+
+One or more of the following arguments are required:
+
+- `--source`/`-s`
+- `--encodes` / `-e`
+- `--input_directory`/`-d`
+
+If no source is passed and `--input_directory` is used, the script will attempt guess the source based on file size and exclude it (assuming all files are saved in the same directory). If the source is located in a different directory, it is recommended to pass the source via argument so indexing is performed correctly.
 
 ### Shared Arguments
 
+> A \* denotes that an argument is required only if a similar argument isn't already passed (i.e., `--frames` vs `--random_frames`)
+
 | Full Argument Name | Alias | Description                                                                                                                                                        | Mandatory: `screenshots` / `compare` |
 | ------------------ | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ |
-| `source`           | None  | Path to the source file. Positional                                                                                                                                | True / True                          |
-| `encodes`          | `-e`  | Space delimited list of encode files                                                                                                                               | False / <b>*</b>True                 |
+| `source`           | `-s`  | Path to the source file                                                                                                                                            | <b>*</b>True / True                  |
+| `encodes`          | `-e`  | Space delimited list of encode files                                                                                                                               | <b>\*</b>True / <b>*</b>True          |
 | `frames`           | `-f`  | Space delimited list of screenshot frame numbers. For `compare`, this accepts a range in the form 'START STOP'                                                     | <b>*</b>True / False                 |
 | `titles`           | `-t`  | Space delimited list of titles for the encodes. Must match the number of encodes passed                                                                            | False / False                        |
-| `input_directory`  | `-d`  | Path to an input directory containing encodes to screenshot                                                                                                        | False / <b>*</b>True                 |
+| `input_directory`  | `-d`  | Path to an input directory containing encodes to screenshot                                                                                                        | <b>\*</b>True / <b>*</b>True          |
 | `resize_kernel`    | `-k`  | Specify a resizing kernel to use for source on upscaled/downscaled encodes (make sure screenshots match)                                                           | False / False                        |
-| `no_frame_info`    | `-ni` | Don't add frame overlay with name, frame number, picture type, etc. This flag negates the default behavior                                                                    | False / False                        |
+| `no_frame_info`    | `-ni` | Don't add frame overlay with name, frame number, picture type, etc. This flag negates the default behavior                                                         | False / False                        |
 | `crop`             | `-c`  | Optional custom crop dimensions to use. Default uses the dimensions of the first encode passed. Set this if only passing `source` or wish to use a different value | False / False                        |
 | `load_filter`      | `-lf` | Filter used to load & index clips. Default is `ffms2`                                                                                                              | False / False                        |
 
@@ -212,6 +224,12 @@ This is more than likely a plugin or a PATH issue. Make sure you have the latest
 ### Python Can't Load Module 'utils.py'
 
 This is most likely a Python path issue. To solve, set (or append to) the environment variable `PYTHONPATH` with the path of the `modules` directory inside this project.
+
+### Error `Tonemap: Function does not take argument(s) named tone_mapping_function_s`
+
+This is due to an incompatibility between `vs-placebo` and `awsmfunc`. If you're running into this, use `awsmfunc` version 1.3.3 as 1.3.4 (currently the latest) requires a custom compiled version of the `libvs_placebo` plugin.
+
+Linux users should be ok as I compiled the plugin recently. I plan to compile it manually for Windows and add it under `/bin` in the project sometime soon.
 
 ## Acknowledgements
 
