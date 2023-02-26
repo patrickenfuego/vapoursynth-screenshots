@@ -53,6 +53,13 @@ from modules import (
     prepare_clips
 )
 
+try:
+    import argcomplete
+    completer = True
+except ImportError:
+    print("argcomplete not found. Autocomplete will be disabled on Linux shells")
+    completer = False
+
 core = vs.core
 
 
