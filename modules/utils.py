@@ -127,7 +127,8 @@ def crop_file(clip: vs.VideoNode,
     print(f"Crop values:\nLeft: {left}\nRight: {right}\nTop: {top}\nBottom: {bottom}")
     dim_width = src_width - (left + right)
     dim_height = src_height - (top + bottom)
-    print(f"Dimensions: {dim_width}x{dim_height}\n")
+    print(f"Input Dimensions: {src_width}x{src_height}")
+    print(f"Cropped Dimensions: {dim_width}x{dim_height}\n")
 
     return core.std.Crop(clip, left, right, top, bottom)
 
@@ -151,6 +152,11 @@ def load_clips(files: list = None,
     :return: A list of loaded clips
     """
 
+    if not files and not folder:
+        raise NameError(
+            "No files were provided. Pass a list of file paths or a folder containing files to load"
+        )
+
     if load_filter == 'ffms2':
         load_filter = core.ffms2.Source
         suffix = '.ffindex'
@@ -160,13 +166,14 @@ def load_clips(files: list = None,
     else:
         raise ValueError("Unknown load filter specified. Options are 'ffms2' and 'lsmas'")
 
-    if not files and not folder:
-        raise NameError(
-            "No files were provided. Pass a list of file paths or a folder containing files to load"
-        )
-
-    if folder:
+    if folder and source_name:
+        print("\nLoading folder clips...")
         files = [f for f in folder.iterdir() if f.suffix in SUFFIXES and f.stem != source_name]
+    elif folder and not source_name:
+        print("\nLoading folder clips...no source was provided. Attempting to guess based on file size")
+        # Try to guess what src is based on file size. Assumes same directory
+        src = max([f for f in folder.iterdir()], key=lambda x: x.stat().st_size)
+        files = [f for f in folder.iterdir() if f.suffix in SUFFIXES and f.stem != src.stem]
 
     clips = [load_filter(f, cachefile=f.with_suffix(suffix)) for f in files]
 
@@ -200,7 +207,7 @@ def prepare_clips(clips: list[vs.VideoNode],
 
     # Tonemap if source uses 2020ncl matrix coefficients
     if clips[0].get_frame(0).props["_Matrix"] == 9:
-        clips = [awf.DynamicTonemap(c) for c in clips]
+        clips = [awf.DynamicTonemap(clip=c) for c in clips]
 
     # Zip together clips and titles if present
     if clip_titles:

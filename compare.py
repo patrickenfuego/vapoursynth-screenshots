@@ -26,7 +26,6 @@ import vapoursynth as vs
 
 import argparse
 import argcomplete
-from argcomplete.completers import ChoicesCompleter
 from pprint import pformat
 
 from modules import (
